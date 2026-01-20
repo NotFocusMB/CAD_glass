@@ -16,6 +16,9 @@ namespace Core
         /// </summary>
         /// <param name="minValue">Начальное минимальное значение.</param>
         /// <param name="maxValue">Начальное максимальное значение.</param>
+        /// <exception cref="ArgumentException">
+        /// Выбрасывается, если minValue больше maxValue.
+        /// </exception>
         public Parameter(double minValue, double maxValue)
         {
             if (minValue > maxValue)
@@ -64,12 +67,19 @@ namespace Core
         /// <summary>
         /// Текущее значение параметра.
         /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Выбрасывается, если значение находится вне допустимого диапазона.
+        /// </exception>
         public double Value
         {
-            get { return _value; }
+            get
+            {
+                Validate(_value, nameof(Value));
+                return _value;
+            }
             set
             {
-                Validate(value);
+                Validate(value, nameof(value));
                 _value = value;
             }
         }
@@ -78,19 +88,23 @@ namespace Core
         /// Проверяет, находится ли значение в допустимом диапазоне.
         /// </summary>
         /// <param name="value">Проверяемое значение.</param>
-        private void Validate(double value)
+        /// <param name="paramName">Имя параметра для сообщения об ошибке.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Выбрасывается, если значение вне диапазона.
+        /// </exception>
+        private void Validate(double value, string paramName)
         {
-            if (value < MinValue)
+            if (value < _minValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(value),
+                throw new ArgumentOutOfRangeException(paramName,
                     $"Значение ({value}) не может быть меньше"
-                    + $" минимального ({MinValue}).");
+                    + $" минимального ({_minValue}).");
             }
-            if (value > MaxValue)
+            if (value > _maxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(value),
+                throw new ArgumentOutOfRangeException(paramName,
                     $"Значение ({value}) не может быть больше"
-                    + $" максимального ({MaxValue}).");
+                    + $" максимального ({_maxValue}).");
             }
         }
     }

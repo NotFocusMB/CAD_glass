@@ -77,7 +77,11 @@ namespace Core
             if (NumericalParameters.ContainsKey(type))
             {
                 var param = NumericalParameters[type];
-                if (param.MinValue > param.MaxValue) return "Конфликт!";
+                // Добавляем проверку на несовместимость
+                if (param.MinValue > param.MaxValue ||
+                    (param.MinValue > _initialLimits[type].Max) ||
+                    (param.MaxValue < _initialLimits[type].Min))
+                    return "Конфликт!";
 
                 return $"{param.MinValue:F1} - {param.MaxValue:F1}";
             }

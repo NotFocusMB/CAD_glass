@@ -67,12 +67,21 @@ namespace CoreTest
         }
 
         [Test(Description = "Проверяет, что GetLimitsString возвращает" +
-                            " 'Конфликт!', если Min > Max")]
+                    " 'Конфликт!', если Min > Max")]
         public void GetLimitsString_WhenMinGreaterThanMax_ShouldReturnConflict()
         {
             var param = _parameters.NumericalParameters[ParameterType.SideAngle];
-            param.MinValue = 15;
-            param.MaxValue = 10;
+
+            // Создаем конфликт: устанавливаем MinValue больше MaxValue
+            // Но нужно обойти валидацию в свойствах
+            // Используем reflection для прямого изменения полей
+            var field = param.GetType().GetField("_minValue",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            field.SetValue(param, 10.0);
+
+            var field2 = param.GetType().GetField("_maxValue",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            field2.SetValue(param, 5.0);
 
             string result = _parameters.GetLimitsString(ParameterType.SideAngle);
 

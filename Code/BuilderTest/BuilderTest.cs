@@ -49,7 +49,7 @@ namespace BuilderTest
         }
 
         [Test(Description = "Проверяет, что BuildGlass вызывает исключение," +
-                            " если параметры невалидны")]
+                    " если параметры невалидны")]
         public void BuildGlass_WithInvalidParameters_ShouldThrowValidationError()
         {
             var parameters = new Parameters();
@@ -60,8 +60,7 @@ namespace BuilderTest
             Action act = () => _builder.BuildGlass(parameters);
 
             act.Should().Throw<ArgumentException>()
-               .WithMessage("Ошибка построения бокала:\\nРадиус чаши (1,4)"
-                          + " должен быть больше толщины стенок (1,50)");
+               .WithMessage("Ошибка построения бокала:\nРадиус чаши (1,4) должен быть больше толщины стенок (1,50)");
         }
 
         [Test(Description = "Проверяет, что вызов BuildGlass с null параметрами" +

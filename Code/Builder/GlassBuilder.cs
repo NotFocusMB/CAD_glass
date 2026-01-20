@@ -251,8 +251,10 @@ namespace GlassPlugin
             if (bowlRadius <= wallThickness)
             {
                 //TODO: rsdn (исправлено)
-                throw new ArgumentException($"Радиус чаши ({bowlRadius}) должен"
-                    + $" быть больше толщины стенок ({wallThickness:F2})");
+                double bowlRadiusInvariant = bowlRadius;
+                double wallThicknessInvariant = wallThickness;
+                throw new ArgumentException($"Радиус чаши ({bowlRadiusInvariant}) должен"
+                    + $" быть больше толщины стенок ({wallThicknessInvariant:F2})");
             }
 
             //TODO: {} (исправлено)
