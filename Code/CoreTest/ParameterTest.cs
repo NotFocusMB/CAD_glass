@@ -13,64 +13,60 @@ namespace CoreTest
         [SetUp]
         public void Setup()
         {
-            _parameter = new Parameter
-            {
-                MinValue = 10,
-                MaxValue = 100
-            };
+            // Исправлено: Используем конструктор с параметрами
+            _parameter = new Parameter(10, 100);
         }
 
         [Test(Description = "Проверяет, что можно установить корректное значение")]
         public void Value_SetValidValue_ShouldSetValue()
         {
-            // Act
             _parameter.Value = 50;
-
-            // Assert
             _parameter.Value.Should().Be(50);
         }
 
-        [Test(Description = "Проверяет, что значение МЕНЬШЕ MinValue вызывает правильное исключение")]
+        [Test(Description = "Проверяет, что значение МЕНЬШЕ MinValue" +
+                            " вызывает правильное исключение")]
         public void Value_SetBelowMinValue_ShouldThrowArgumentException_WithValueSmall()
         {
-            // Arrange: создаем "действие", которое должно вызвать ошибку
             Action act = () => _parameter.Value = 9.9;
 
-            // Assert
-            act.Should().Throw<ArgumentException>()
-                .WithMessage("Value_small");
+            // Исправлено: Ожидаем ArgumentOutOfRangeException и новое сообщение
+            act.Should().Throw<ArgumentOutOfRangeException>()
+                .WithMessage("Значение (9.9) не может быть меньше" +
+                           " минимального (10).*");
         }
 
-        [Test(Description = "Проверяет, что значение БОЛЬШЕ MaxValue вызывает правильное исключение")]
+        [Test(Description = "Проверяет, что значение БОЛЬШЕ MaxValue" +
+                            " вызывает правильное исключение")]
         public void Value_SetAboveMaxValue_ShouldThrowArgumentException_WithValueTooBig()
         {
-            // Arrange
             Action act = () => _parameter.Value = 100.1;
 
-            // Assert
-            act.Should().Throw<ArgumentException>()
-                .WithMessage("Value_TooBig");
+            // Исправлено: Ожидаем ArgumentOutOfRangeException и новое сообщение
+            act.Should().Throw<ArgumentOutOfRangeException>()
+                .WithMessage("Значение (100.1) не может быть больше" +
+                           " максимального (100).*");
         }
 
-        [Test(Description = "Проверяет, что после неудачной установки значение остается прежним")]
+        [Test(Description = "Проверяет, что после неудачной установки" +
+                            " значение остается прежним")]
         public void Value_AfterInvalidSet_ShouldKeepPreviousValue()
         {
-            // Arrange: устанавливаем начальное корректное значение
             _parameter.Value = 75;
             double originalValue = _parameter.Value;
 
-            // Act: пытаемся установить некорректное значение
             Action invalidAction = () => _parameter.Value = 150;
 
-            // Assert: проверяем, что исключение было, а значение не изменилось
-            invalidAction.Should().Throw<ArgumentException>();
-            _parameter.Value.Should().Be(originalValue, "потому что новое значение было невалидным");
+            // Исправлено: Ожидаем ArgumentOutOfRangeException
+            invalidAction.Should().Throw<ArgumentOutOfRangeException>();
+            _parameter.Value.Should().Be(originalValue,
+                "потому что новое значение было невалидным");
         }
 
-        [Test(Description = "Проверяет граничные значения (установка MinValue и MaxValue)")]
+        [Test(Description = "Проверяет граничные значения (установка" +
+                            " MinValue и MaxValue)")]
         public void Value_SetToBoundaries_ShouldBeValid()
         {
-            // Act & Assert
             Action setAtMin = () => _parameter.Value = 10;
             setAtMin.Should().NotThrow();
             _parameter.Value.Should().Be(10);

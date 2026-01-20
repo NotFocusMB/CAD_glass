@@ -12,17 +12,29 @@ namespace Builder
     /// </summary>
     public class KompasWrapper
     {
-        // Главный объект для взаимодействия с API КОМПАС-3D.
+        //TODO: rsdn (исправлено)
+        /// <summary>
+        /// Главный объект для взаимодействия с API КОМПАС-3D.
+        /// </summary>
         private KompasObject _kompas;
-        // Объект 3D-документа, в котором ведется работа.
+
+        /// <summary>
+        /// Объект 3D-документа, в котором ведется работа.
+        /// </summary>
         private ksDocument3D _document3D;
-        // Объект основной детали 3D-документа.
+
+        /// <summary>
+        /// Объект основной детали 3D-документа.
+        /// </summary>
         private ksPart _part;
-        // Флаг, указывающий, было ли установлено соединение с КОМПАС.
+
+        /// <summary>
+        /// Флаг, указывающий, было ли установлено соединение с КОМПАС.
+        /// </summary>
         private bool _isCadAttached = false;
 
         /// <summary>
-        /// Подключается к запущенному экземпляру КОМПАС-3D или запускает новый, если он не найден.
+        /// Подключается к запущенному экземпляру КОМПАС-3D или запускает новый.
         /// </summary>
         /// <returns>True, если подключение успешно; иначе False.</returns>
         public bool ConnectCAD()
@@ -38,8 +50,9 @@ namespace Builder
                 }
                 try
                 {
-                    // Пытаемся получить доступ к уже запущенному экземпляру КОМПАС.
-                    _kompas = (KompasObject)Marshal.GetActiveObject("KOMPAS.Application.5");
+                    // Пытаемся получить доступ к запущенному экземпляру КОМПАС.
+                    _kompas = (KompasObject)Marshal.GetActiveObject(
+                        "KOMPAS.Application.5");
                 }
                 catch (COMException)
                 {
@@ -49,8 +62,10 @@ namespace Builder
                         return false;
                     _kompas = (KompasObject)Activator.CreateInstance(kompasType);
                 }
+
                 if (_kompas == null)
                     return false;
+
                 _kompas.Visible = true;
                 _kompas.ActivateControllerAPI();
                 _isCadAttached = true;
@@ -72,6 +87,7 @@ namespace Builder
             {
                 if (!_isCadAttached && !ConnectCAD())
                     return false;
+
                 _document3D = (ksDocument3D)_kompas.Document3D();
                 _document3D.Create();
                 _document3D = (ksDocument3D)_kompas.ActiveDocument3D();
@@ -119,7 +135,7 @@ namespace Builder
         /// <summary>
         /// Создает новый пустой эскиз на одной из базовых плоскостей.
         /// </summary>
-        /// <param name="planeType">Тип базовой плоскости (например, o3d_planeXOZ).</param>
+        /// <param name="planeType">Тип базовой плоскости (o3d_planeXOZ и т.д.).</param>
         /// <returns>Объект созданного эскиза (ksEntity).</returns>
         public ksEntity CreateSketch(short planeType)
         {
@@ -167,10 +183,12 @@ namespace Builder
                 var sketchDef = (ksSketchDefinition)sketch.GetDefinition();
                 sketchDef.EndEdit();
             }
-            catch { }
+            //TODO: error! (исправлено)
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка завершения редактирования: {ex.Message}");
+            }
         }
-
-        // === МЕТОДЫ РИСОВАНИЯ В ЭСКИЗЕ ===
 
         /// <summary>
         /// Рисует отрезок линии в 2D-документе эскиза.
@@ -181,13 +199,18 @@ namespace Builder
         /// <param name="x2">X-координата конечной точки.</param>
         /// <param name="y2">Y-координата конечной точки.</param>
         /// <param name="style">Стиль линии (1 - основная, 3 - осевая).</param>
-        public void DrawLineSeg(ksDocument2D doc2D, double x1, double y1, double x2, double y2, int style = 1)
+        public void DrawLineSeg(ksDocument2D doc2D, double x1, double y1,
+            double x2, double y2, int style = 1)
         {
             try
             {
                 doc2D.ksLineSeg(x1, y1, x2, y2, style);
             }
-            catch { }
+            //TODO: error! (исправлено)
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка рисования отрезка: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -201,39 +224,48 @@ namespace Builder
         /// <param name="endAngle">Конечный угол в градусах.</param>
         /// <param name="style">Стиль линии.</param>
         public void DrawArc(ksDocument2D doc2D, double centerX, double centerY,
-                            double radius, double startAngle, double endAngle, int style = 1)
+                            double radius, double startAngle, double endAngle,
+                            int style = 1)
         {
             try
             {
-                doc2D.ksArcByAngle(centerX, centerY, radius, startAngle, endAngle, 1, style);
+                doc2D.ksArcByAngle(centerX, centerY, radius,
+                    startAngle, endAngle, 1, style);
             }
+            //TODO: error! (исправлено)
             catch (Exception ex)
             {
                 Console.WriteLine($"Ошибка рисования дуги: {ex.Message}");
             }
         }
 
+        //TODO: rsdn (исправлено)
         /// <summary>
-        /// Создает тело вращения на основе эскиза. (ВНИМАНИЕ: Этот метод является устаревшим и может не работать в новых версиях API).
+        /// Создает тело вращения на основе эскиза. 
         /// </summary>
-        /// <param name="sketch">Эскиз, содержащий замкнутый контур и осевую линию.</param>
+        /// <param name="sketch">Эскиз, содержащий контур и осевую линию.</param>
         /// <param name="angleDegrees">Угол вращения в градусах.</param>
         /// <returns>Объект созданного тела вращения.</returns>
-        public ksEntity CreateRevolvedExtrusion(ksEntity sketch, double angleDegrees = 360)
+        public ksEntity CreateRevolvedExtrusion(ksEntity sketch,
+            double angleDegrees = 360)
         {
             try
             {
-                Console.WriteLine($"=== СОЗДАНИЕ ВРАЩАТЕЛЬНОГО ВЫДАВЛИВАНИЯ ===");
-                var revolve = (ksEntity)_part.NewEntity((short)Obj3dType.o3d_baseRotated);
+                Console.WriteLine("=== СОЗДАНИЕ ВРАЩАТЕЛЬНОГО ВЫДАВЛИВАНИЯ ===");
+                var revolve = (ksEntity)_part.NewEntity(
+                    (short)Obj3dType.o3d_baseRotated);
                 if (revolve == null)
                 {
-                    Console.WriteLine("Ошибка: Не удалось создать объект вращательного выдавливания");
+                    Console.WriteLine("Ошибка: Не удалось создать объект"
+                        + " вращательного выдавливания");
                     return null;
                 }
+
                 var revolveDef = (ksBaseRotatedDefinition)revolve.GetDefinition();
                 if (revolveDef == null)
                 {
-                    Console.WriteLine("Ошибка: Не удалось получить определение вращательного выдавливания");
+                    Console.WriteLine("Ошибка: Не удалось получить определение"
+                        + " вращательного выдавливания");
                     return null;
                 }
 
@@ -243,7 +275,8 @@ namespace Builder
                 try
                 {
                     dynamic dynamicRevolveDef = revolveDef;
-                    var axisZ = (ksEntity)_part.GetDefaultEntity((short)Obj3dType.o3d_axisOZ);
+                    var axisZ = (ksEntity)_part.GetDefaultEntity(
+                        (short)Obj3dType.o3d_axisOZ);
                     if (axisZ != null)
                     {
                         dynamicRevolveDef.axis = axisZ;
@@ -255,7 +288,8 @@ namespace Builder
                 }
                 catch (Exception dynEx)
                 {
-                    Console.WriteLine($"Динамические свойства не сработали: {dynEx.Message}");
+                    Console.WriteLine("Динамические свойства не сработали:"
+                        + $" {dynEx.Message}");
                     try
                     {
                         revolveDef.SetSideParam(true, angleDegrees * Math.PI / 180.0);
@@ -263,22 +297,25 @@ namespace Builder
                     }
                     catch (Exception paramEx)
                     {
-                        Console.WriteLine($"SetSideParam не сработал: {paramEx.Message}");
+                        Console.WriteLine("SetSideParam не сработал:"
+                            + $" {paramEx.Message}");
                     }
                 }
 
                 bool createResult = revolve.Create();
                 if (!createResult)
                 {
-                    Console.WriteLine("Ошибка: Не удалось создать операцию вращательного выдавливания");
+                    Console.WriteLine("Ошибка: Не удалось создать операцию"
+                        + " вращательного выдавливания");
                     return null;
                 }
-                Console.WriteLine($"=== ВРАЩАТЕЛЬНОЕ ВЫДАВЛИВАНИЕ СОЗДАНО УСПЕШНО! ===");
+
+                Console.WriteLine("=== ВРАЩАТЕЛЬНОЕ ВЫДАВЛИВАНИЕ СОЗДАНО! ===");
                 return revolve;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"=== ОШИБКА ВРАЩАТЕЛЬНОГО ВЫДАВЛИВАНИЯ ===");
+                Console.WriteLine("=== ОШИБКА ВРАЩАТЕЛЬНОГО ВЫДАВЛИВАНИЯ ===");
                 Console.WriteLine($"Ошибка: {ex.Message}");
                 return null;
             }
@@ -289,7 +326,7 @@ namespace Builder
         /// </summary>
         public void ResetAllSketches()
         {
-            Console.WriteLine("Сброс выполнено");
+            Console.WriteLine("Сброс выполнен");
         }
 
         /// <summary>

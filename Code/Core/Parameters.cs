@@ -15,55 +15,30 @@ namespace Core
         /// </summary>
         public Dictionary<ParameterType, Parameter> NumericalParameters { get; set; }
 
-        // Приватный словарь-эталон для хранения "заводских" настроек (Min, Max, Default).
-        // Используется для сброса и предотвращения "сжимающихся" ограничений.
-        private readonly Dictionary<ParameterType, (double Min, double Max, double Default)> _initialLimits;
+        // Приватный словарь-эталон для хранения "заводских" настроек.
+        private readonly Dictionary<ParameterType,
+            (double Min, double Max, double Default)> _initialLimits;
 
         /// <summary>
-        /// Инициализирует новый экземпляр класса Parameters,
-        /// устанавливает начальные значения и ограничения для всех параметров.
+        /// Инициализирует новый экземпляр класса Parameters.
         /// </summary>
         public Parameters()
         {
-            // --- Инициализация объектов Parameter с "заводскими" Min/Max ---
-            Parameter stalkheight = new Parameter { MinValue = 50, MaxValue = 100 };
-            Parameter SideHeight = new Parameter { MinValue = 0, MaxValue = 50 };
-            Parameter bowlradius = new Parameter { MinValue = 25, MaxValue = 50 };
-            Parameter stalkradius = new Parameter { MinValue = 1, MaxValue = 3 };
-            Parameter sideangle = new Parameter { MinValue = 0, MaxValue = 15 };
-            Parameter standradius = new Parameter { MinValue = 20, MaxValue = 75 };
+            InitializeParameters();
+            SetDefaultValues();
 
-            NumericalParameters = new Dictionary<ParameterType, Parameter>()
-            {
-                [ParameterType.StalkHeight] = stalkheight,
-                [ParameterType.SideHeight] = SideHeight,
-                [ParameterType.BowlRadius] = bowlradius,
-                [ParameterType.StalkRadius] = stalkradius,
-                [ParameterType.SideAngle] = sideangle,
-                [ParameterType.StandRadius] = standradius,
-            };
-
-            // --- Установка начальных значений по умолчанию ---
-            NumericalParameters[ParameterType.StalkHeight].Value = 75;
-            NumericalParameters[ParameterType.SideHeight].Value = 40;
-            NumericalParameters[ParameterType.BowlRadius].Value = 35;
-            NumericalParameters[ParameterType.StalkRadius].Value = 2;
-            NumericalParameters[ParameterType.SideAngle].Value = 10;
-            NumericalParameters[ParameterType.StandRadius].Value = 30;
-
-            // --- Создание "Эталона" ---
-            // Копируем "заводские" Min/Max и текущие значения (как дефолтные) в словарь-хранилище.
+            // Кэшируем "заводские" Min/Max и дефолтные значения.
+            // Это должно быть сделано прямо в конструкторе из-за 'readonly'.
             _initialLimits = NumericalParameters.ToDictionary(
                 kvp => kvp.Key,
                 kvp => (kvp.Value.MinValue, kvp.Value.MaxValue, kvp.Value.Value)
             );
 
-            // Сразу применяем все зависимости, чтобы скорректировать лимиты на основе начальных значений.
             UpdateAllLimits();
         }
 
         /// <summary>
-        /// Обновляет значение указанного параметра и пересчитывает все зависимые ограничения.
+        /// Обновляет значение параметра и пересчитывает зависимые ограничения.
         /// </summary>
         /// <param name="changedValue">Новое значение параметра.</param>
         /// <param name="changedType">Тип измененного параметра.</param>
@@ -74,103 +49,155 @@ namespace Core
                 NumericalParameters[changedType].Value = changedValue;
                 UpdateAllLimits();
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
-                throw ex; // Пробрасываем исключение валидации из класса Parameter.
+                // Пробрасываем исключение валидации из класса Parameter,
+                // сохраняя исходный стек вызовов.
+                throw;
             }
         }
 
         /// <summary>
-        /// Полностью сбрасывает все значения и динамические ограничения к начальным "заводским" настройкам.
+        /// Сбрасывает все значения и ограничения к начальным настройкам.
         /// </summary>
         public void ResetToDefaults()
         {
-            // ШАГ 1: Сначала восстанавливаем диапазоны MinValue/MaxValue из эталона.
-            foreach (var kvp in _initialLimits)
-            {
-                var param = NumericalParameters[kvp.Key];
-                param.MinValue = kvp.Value.Min;
-                param.MaxValue = kvp.Value.Max;
-            }
-
-            // ШАГ 2: Только теперь, когда диапазоны широкие, устанавливаем значения по умолчанию.
-            foreach (var kvp in _initialLimits)
-            {
-                NumericalParameters[kvp.Key].Value = kvp.Value.Default;
-            }
-
-            // Пересчитываем лимиты на основе сброшенных значений.
+            ResetLimitsToInitial();
+            SetDefaultValues();
             UpdateAllLimits();
         }
 
         /// <summary>
-        /// Приватный метод, который пересчитывает все динамические ограничения,
-        /// выбирая самое строгое из "заводского" и вычисленного геометрически.
-        /// </summary>
-        private void UpdateAllLimits()
-        {
-            //Сбрасываем все лимиты к "заводским" перед каждым пересчетом.
-            foreach (var kvp in _initialLimits)
-            {
-                var param = NumericalParameters[kvp.Key];
-                param.MinValue = kvp.Value.Min;
-                param.MaxValue = kvp.Value.Max;
-            }
-
-            // Получаем текущие значения для расчетов.
-            double sideHeight = NumericalParameters[ParameterType.SideHeight].Value;
-            double bowlRadius = NumericalParameters[ParameterType.BowlRadius].Value;
-            double sideAngle = NumericalParameters[ParameterType.SideAngle].Value;
-            double standRadius = NumericalParameters[ParameterType.StandRadius].Value;
-
-            // --- Применение геометрических зависимостей ---
-
-            // ЗАВИСИМОСТЬ 1: StandRadius >= 2/3 * BowlRadius
-            var standRadiusParam = NumericalParameters[ParameterType.StandRadius];
-            standRadiusParam.MinValue = Math.Max(standRadiusParam.MinValue, (2.0 / 3.0) * bowlRadius);
-
-            var bowlRadiusParam = NumericalParameters[ParameterType.BowlRadius];
-            bowlRadiusParam.MaxValue = Math.Min(bowlRadiusParam.MaxValue, 1.5 * standRadius);
-
-            // ЗАВИСИМОСТЬ 2: SideHeight * sin(SideAngle) <= BowlRadius / 2
-            double angleRad = sideAngle * Math.PI / 180.0;
-
-            // Ограничение для SideHeight
-            if (Math.Sin(angleRad) > 0.001)
-            {
-                var sideHeightParam = NumericalParameters[ParameterType.SideHeight];
-                sideHeightParam.MaxValue = Math.Min(sideHeightParam.MaxValue, (bowlRadius / 2.0) / Math.Sin(angleRad));
-            }
-
-            // Ограничение для SideAngle
-            if (sideHeight > 0)
-            {
-                double sinMaxAngle = (bowlRadius / 2.0) / sideHeight;
-                if (sinMaxAngle <= 1 && sinMaxAngle > 0)
-                {
-                    var sideAngleParam = NumericalParameters[ParameterType.SideAngle];
-                    sideAngleParam.MaxValue = Math.Min(sideAngleParam.MaxValue, Math.Asin(sinMaxAngle) * 180.0 / Math.PI);
-                }
-            }
-
-            // Ограничение для BowlRadius
-            bowlRadiusParam.MinValue = Math.Max(bowlRadiusParam.MinValue, 2.0 * sideHeight * Math.Sin(angleRad));
-        }
-
-        /// <summary>
-        /// Возвращает строку с текущими минимальным и максимальным ограничениями для указанного параметра.
+        /// Возвращает строку с текущими ограничениями для параметра.
         /// </summary>
         /// <param name="type">Тип параметра.</param>
-        /// <returns>Форматированная строка (например, "10,5 - 50,0") или "Конфликт!".</returns>
+        /// <returns>Форматированная строка (например, "10.5 - 50.0").</returns>
         public string GetLimitsString(ParameterType type)
         {
             if (NumericalParameters.ContainsKey(type))
             {
                 var param = NumericalParameters[type];
                 if (param.MinValue > param.MaxValue) return "Конфликт!";
+
                 return $"{param.MinValue:F1} - {param.MaxValue:F1}";
             }
             return "N/A";
+        }
+
+        /// <summary>
+        /// Инициализирует словарь параметров с "заводскими" Min/Max.
+        /// </summary>
+        private void InitializeParameters()
+        {
+            // Используем новый конструктор класса Parameter
+            var stalkHeight = new Parameter(50, 100);
+            var sideHeight = new Parameter(1, 50);
+            var bowlRadius = new Parameter(25, 50);
+            var stalkRadius = new Parameter(1, 3);
+            var sideAngle = new Parameter(0, 15);
+            var standRadius = new Parameter(20, 75);
+
+            NumericalParameters = new Dictionary<ParameterType, Parameter>()
+            {
+                [ParameterType.StalkHeight] = stalkHeight,
+                [ParameterType.SideHeight] = sideHeight,
+                [ParameterType.BowlRadius] = bowlRadius,
+                [ParameterType.StalkRadius] = stalkRadius,
+                [ParameterType.SideAngle] = sideAngle,
+                [ParameterType.StandRadius] = standRadius,
+            };
+        }
+
+        /// <summary>
+        /// Устанавливает начальные значения по умолчанию.
+        /// </summary>
+        private void SetDefaultValues()
+        {
+            NumericalParameters[ParameterType.StalkHeight].Value = 75;
+            NumericalParameters[ParameterType.SideHeight].Value = 40;
+            NumericalParameters[ParameterType.BowlRadius].Value = 35;
+            NumericalParameters[ParameterType.StalkRadius].Value = 2;
+            NumericalParameters[ParameterType.SideAngle].Value = 10;
+            NumericalParameters[ParameterType.StandRadius].Value = 30;
+        }
+
+        /// <summary>
+        /// Пересчитывает все динамические ограничения.
+        /// </summary>
+        private void UpdateAllLimits()
+        {
+            ResetLimitsToInitial();
+            ApplyStandBowlRadiusDependency();
+            ApplySideHeightAngleDependency();
+        }
+
+        /// <summary>
+        /// Сбрасывает все лимиты к "заводским" перед каждым пересчетом.
+        /// </summary>
+        private void ResetLimitsToInitial()
+        {
+            foreach (var kvp in _initialLimits)
+            {
+                var param = NumericalParameters[kvp.Key];
+                param.MinValue = kvp.Value.Min;
+                param.MaxValue = kvp.Value.Max;
+            }
+        }
+
+        /// <summary>
+        /// Применяет зависимость: StandRadius >= 2/3 * BowlRadius.
+        /// </summary>
+        private void ApplyStandBowlRadiusDependency()
+        {
+            double bowlRadius = NumericalParameters[ParameterType.BowlRadius].Value;
+            double standRadius = NumericalParameters[ParameterType.StandRadius].Value;
+
+            var standRadiusParam = NumericalParameters[ParameterType.StandRadius];
+            standRadiusParam.MinValue = Math.Max(standRadiusParam.MinValue,
+                (2.0 / 3.0) * bowlRadius);
+
+            var bowlRadiusParam = NumericalParameters[ParameterType.BowlRadius];
+            bowlRadiusParam.MaxValue = Math.Min(bowlRadiusParam.MaxValue,
+                1.5 * standRadius);
+        }
+
+        /// <summary>
+        /// Применяет зависимость: SideHeight * sin(SideAngle) <= BowlRadius / 2.
+        /// </summary>
+        private void ApplySideHeightAngleDependency()
+        {
+            double sideHeight = NumericalParameters[ParameterType.SideHeight].Value;
+            double bowlRadius = NumericalParameters[ParameterType.BowlRadius].Value;
+            double sideAngle = NumericalParameters[ParameterType.SideAngle].Value;
+            double angleRad = sideAngle * Math.PI / 180.0;
+
+            // Ограничение для SideHeight
+            if (Math.Sin(angleRad) > 0.001)
+            {
+                var sideHeightParam = NumericalParameters[ParameterType.SideHeight];
+                var maxSideHeight = (bowlRadius / 2.0) / Math.Sin(angleRad);
+                sideHeightParam.MaxValue = Math.Min(sideHeightParam.MaxValue,
+                    maxSideHeight);
+            }
+
+            // Ограничение для SideAngle
+            if (sideHeight > 0)
+            {
+                var sinMaxAngle = (bowlRadius / 2.0) / sideHeight;
+                if (sinMaxAngle <= 1 && sinMaxAngle > 0)
+                {
+                    var sideAngleParam = NumericalParameters[ParameterType.SideAngle];
+                    var maxAngle = Math.Asin(sinMaxAngle) * 180.0 / Math.PI;
+                    sideAngleParam.MaxValue = Math.Min(sideAngleParam.MaxValue,
+                        maxAngle);
+                }
+            }
+
+            // Ограничение для BowlRadius
+            var bowlRadiusParam = NumericalParameters[ParameterType.BowlRadius];
+            var minBowlRadius = 2.0 * sideHeight * Math.Sin(angleRad);
+            bowlRadiusParam.MinValue = Math.Max(bowlRadiusParam.MinValue,
+                minBowlRadius);
         }
     }
 }

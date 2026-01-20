@@ -1,7 +1,9 @@
 ﻿using Core;
 using GlassPlugin;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace glass_plugin
@@ -11,10 +13,21 @@ namespace glass_plugin
     /// </summary>
     public partial class GUI : Form
     {
-        // Экземпляр класса, отвечающего за построение 3D-модели.
+        /// <summary>
+        /// Экземпляр класса, отвечающего за построение 3D-модели.
+        /// </summary>
         private GlassBuilder _builder;
-        // Экземпляр класса, управляющего параметрами и их зависимостями.
+
+        /// <summary>
+        /// Экземпляр класса, управляющего параметрами и их зависимостями.
+        /// </summary>
         private Parameters _parameters;
+
+        /// <summary>
+        /// Карта для связи типа параметра с его элементами управления на форме.
+        /// </summary>
+        private Dictionary<ParameterType,
+            (TextBox TextBox, ToolTip ToolTip, Label Label)> _controlMap;
 
         /// <summary>
         /// Конструктор формы.
@@ -26,32 +39,50 @@ namespace glass_plugin
 
         /// <summary>
         /// Обработчик события загрузки формы.
-        /// Инициализирует объекты параметров и построителя, а также сбрасывает UI к начальным значениям.
         /// </summary>
         private void GUI_Load(object sender, EventArgs e)
         {
             _parameters = new Parameters();
             _builder = new GlassBuilder();
+            InitializeControlMap();
             ResetFormToDefaults();
         }
 
         /// <summary>
-        /// Обновляет все текстовые метки (Label) на форме, отображающие
-        /// актуальные динамические ограничения для каждого параметра.
+        /// Инициализирует словарь для связи параметров с элементами UI.
+        /// </summary>
+        private void InitializeControlMap()
+        {
+            _controlMap = new Dictionary<ParameterType, (TextBox, ToolTip, Label)>
+            {
+                [ParameterType.StalkHeight] = (StalkHeightTextBox, ErrorToolTip1,
+                    StalkHeightLimitsLabel),
+                [ParameterType.SideHeight] = (SideHeightTextBox, ErrorToolTip2,
+                    SideHeightLimitsLabel),
+                [ParameterType.BowlRadius] = (BowlRadiusTextBox, ErrorToolTip3,
+                    BowlRadiusLimitsLabel),
+                [ParameterType.StalkRadius] = (StalkRadiusTextBox, ErrorToolTip4,
+                    StalkRadiusLimitsLabel),
+                [ParameterType.SideAngle] = (SideAngleTextBox, ErrorToolTip5,
+                    SideAngleLimitsLabel),
+                [ParameterType.StandRadius] = (StandRadiusTextBox, ErrorToolTip6,
+                    StandRadiusLimitsLabel)
+            };
+        }
+
+        /// <summary>
+        /// Обновляет все метки с ограничениями на форме.
         /// </summary>
         private void UpdateAllLimitLabels()
         {
-            StalkHeightLimitsLabel.Text = _parameters.GetLimitsString(ParameterType.StalkHeight);
-            SideHeightLimitsLabel.Text = _parameters.GetLimitsString(ParameterType.SideHeight);
-            BowlRadiusLimitsLabel.Text = _parameters.GetLimitsString(ParameterType.BowlRadius);
-            StalkRadiusLimitsLabel.Text = _parameters.GetLimitsString(ParameterType.StalkRadius);
-            SideAngleLimitsLabel.Text = _parameters.GetLimitsString(ParameterType.SideAngle);
-            StandRadiusLimitsLabel.Text = _parameters.GetLimitsString(ParameterType.StandRadius);
+            foreach (var entry in _controlMap)
+            {
+                entry.Value.Label.Text = _parameters.GetLimitsString(entry.Key);
+            }
         }
 
         /// <summary>
         /// Обработчик нажатия кнопки "Создать".
-        /// Проверяет корректность всех введенных данных и запускает процесс построения модели.
         /// </summary>
         private void CreateButton_Click(object sender, EventArgs e)
         {
@@ -63,8 +94,8 @@ namespace glass_plugin
             }
             else
             {
-                MessageBox.Show("Пожалуйста, исправьте все поля, выделенные красным!", "Ошибка",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Пожалуйста, исправьте все поля, выделенные красным!",
+                    "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -74,135 +105,71 @@ namespace glass_plugin
         /// <returns>True, если все поля валидны; иначе False.</returns>
         private bool CheckAll()
         {
-            // Простая и надежная проверка: если ни одно поле не подсвечено красным, все в порядке.
-            return StalkHeightTextBox.BackColor == Color.White &&
-                   SideHeightTextBox.BackColor == Color.White &&
-                   BowlRadiusTextBox.BackColor == Color.White &&
-                   StalkRadiusTextBox.BackColor == Color.White &&
-                   SideAngleTextBox.BackColor == Color.White &&
-                   StandRadiusTextBox.BackColor == Color.White;
+            return _controlMap.Values.All(c => c.TextBox.BackColor == Color.White);
         }
 
         /// <summary>
-        /// Обрабатывает изменение текста в поле "Высота ножки".
+        /// Универсальный обработчик для валидации и обновления параметра.
         /// </summary>
+        /// <param name="paramType">Тип параметра для обработки.</param>
+        private void ValidateAndUpdate(ParameterType paramType)
+        {
+            var (textBox, toolTip, _) = _controlMap[paramType];
+            var param = _parameters.NumericalParameters[paramType];
+
+            bool isValid = double.TryParse(textBox.Text, out double value) &&
+                           value >= param.MinValue &&
+                           value <= param.MaxValue;
+
+            if (isValid)
+            {
+                textBox.BackColor = Color.White;
+                toolTip.Hide(textBox);
+                _parameters.SetDependencies(value, paramType);
+                UpdateAllLimitLabels();
+            }
+            else
+            {
+                textBox.BackColor = Color.LightCoral;
+                string message = $"Значение должно быть от {param.MinValue:F1}" +
+                                 $" до {param.MaxValue:F1}";
+                toolTip.Show(message, textBox, 5000);
+            }
+        }
+
+        #region TextChanged Event Handlers
+
         private void StalkHeightTextBox_TextChanged(object sender, EventArgs e)
         {
-            var param = _parameters.NumericalParameters[ParameterType.StalkHeight];
-            if (double.TryParse(StalkHeightTextBox.Text, out double value) && value >= param.MinValue && value <= param.MaxValue)
-            {
-                StalkHeightTextBox.BackColor = Color.White;
-                ErrorToolTip1.Hide(StalkHeightTextBox);
-                _parameters.SetDependencies(value, ParameterType.StalkHeight);
-                UpdateAllLimitLabels(); // Обновляем все метки с ограничениями
-            }
-            else
-            {
-                // Если значение невалидно, подсвечиваем поле и показываем подсказку.
-                StalkHeightTextBox.BackColor = Color.LightCoral;
-                ErrorToolTip1.Show($"Значение должно быть от {param.MinValue:F1} до {param.MaxValue:F1}", StalkHeightTextBox, 5000);
-            }
+            ValidateAndUpdate(ParameterType.StalkHeight);
         }
 
-        /// <summary>
-        /// Обрабатывает изменение текста в поле "Высота стенки".
-        /// </summary>
         private void SideHeightTextBox_TextChanged(object sender, EventArgs e)
         {
-            var param = _parameters.NumericalParameters[ParameterType.SideHeight];
-            if (double.TryParse(SideHeightTextBox.Text, out double value) && value >= param.MinValue && value <= param.MaxValue)
-            {
-                SideHeightTextBox.BackColor = Color.White;
-                ErrorToolTip2.Hide(SideHeightTextBox);
-                _parameters.SetDependencies(value, ParameterType.SideHeight);
-                UpdateAllLimitLabels();
-            }
-            else
-            {
-                SideHeightTextBox.BackColor = Color.LightCoral;
-                ErrorToolTip2.Show($"Значение должно быть от {param.MinValue:F1} до {param.MaxValue:F1}", SideHeightTextBox, 5000);
-            }
+            ValidateAndUpdate(ParameterType.SideHeight);
         }
 
-        /// <summary>
-        /// Обрабатывает изменение текста в поле "Радиус чаши".
-        /// </summary>
         private void BowlRadiusTextBox_TextChanged(object sender, EventArgs e)
         {
-            var param = _parameters.NumericalParameters[ParameterType.BowlRadius];
-            if (double.TryParse(BowlRadiusTextBox.Text, out double value) && value >= param.MinValue && value <= param.MaxValue)
-            {
-                BowlRadiusTextBox.BackColor = Color.White;
-                ErrorToolTip3.Hide(BowlRadiusTextBox);
-                _parameters.SetDependencies(value, ParameterType.BowlRadius);
-                UpdateAllLimitLabels();
-            }
-            else
-            {
-                BowlRadiusTextBox.BackColor = Color.LightCoral;
-                ErrorToolTip3.Show($"Значение должно быть от {param.MinValue:F1} до {param.MaxValue:F1}", BowlRadiusTextBox, 5000);
-            }
+            ValidateAndUpdate(ParameterType.BowlRadius);
         }
 
-        /// <summary>
-        /// Обрабатывает изменение текста в поле "Радиус ножки".
-        /// </summary>
         private void StalkRadiusTextBox_TextChanged(object sender, EventArgs e)
         {
-            var param = _parameters.NumericalParameters[ParameterType.StalkRadius];
-            if (double.TryParse(StalkRadiusTextBox.Text, out double value) && value >= param.MinValue && value <= param.MaxValue)
-            {
-                StalkRadiusTextBox.BackColor = Color.White;
-                ErrorToolTip4.Hide(StalkRadiusTextBox);
-                _parameters.SetDependencies(value, ParameterType.StalkRadius);
-                UpdateAllLimitLabels();
-            }
-            else
-            {
-                StalkRadiusTextBox.BackColor = Color.LightCoral;
-                ErrorToolTip4.Show($"Значение должно быть от {param.MinValue:F1} до {param.MaxValue:F1}", StalkRadiusTextBox, 5000);
-            }
+            ValidateAndUpdate(ParameterType.StalkRadius);
         }
 
-        /// <summary>
-        /// Обрабатывает изменение текста в поле "Наклон стенки".
-        /// </summary>
         private void SideAngleTextBox_TextChanged(object sender, EventArgs e)
         {
-            var param = _parameters.NumericalParameters[ParameterType.SideAngle];
-            if (double.TryParse(SideAngleTextBox.Text, out double value) && value >= param.MinValue && value <= param.MaxValue)
-            {
-                SideAngleTextBox.BackColor = Color.White;
-                ErrorToolTip5.Hide(SideAngleTextBox);
-                _parameters.SetDependencies(value, ParameterType.SideAngle);
-                UpdateAllLimitLabels();
-            }
-            else
-            {
-                SideAngleTextBox.BackColor = Color.LightCoral;
-                ErrorToolTip5.Show($"Значение должно быть от {param.MinValue:F1} до {param.MaxValue:F1}", SideAngleTextBox, 5000);
-            }
+            ValidateAndUpdate(ParameterType.SideAngle);
         }
 
-        /// <summary>
-        /// Обрабатывает изменение текста в поле "Радиус основания".
-        /// </summary>
         private void StandRadiusTextBox_TextChanged(object sender, EventArgs e)
         {
-            var param = _parameters.NumericalParameters[ParameterType.StandRadius];
-            if (double.TryParse(StandRadiusTextBox.Text, out double value) && value >= param.MinValue && value <= param.MaxValue)
-            {
-                StandRadiusTextBox.BackColor = Color.White;
-                ErrorToolTip6.Hide(StandRadiusTextBox);
-                _parameters.SetDependencies(value, ParameterType.StandRadius);
-                UpdateAllLimitLabels();
-            }
-            else
-            {
-                StandRadiusTextBox.BackColor = Color.LightCoral;
-                ErrorToolTip6.Show($"Значение должно быть от {param.MinValue:F1} до {param.MaxValue:F1}", StandRadiusTextBox, 5000);
-            }
+            ValidateAndUpdate(ParameterType.StandRadius);
         }
+
+        #endregion
 
         /// <summary>
         /// Обработчик нажатия кнопки "Сброс".
@@ -217,27 +184,20 @@ namespace glass_plugin
         /// </summary>
         private void ResetFormToDefaults()
         {
-            // Сбрасываем модель данных к "заводским" настройкам.
             _parameters.ResetToDefaults();
 
-            // Устанавливаем текст в полях ввода из сброшенной модели.
-            StalkHeightTextBox.Text = _parameters.NumericalParameters[ParameterType.StalkHeight].Value.ToString("F1");
-            SideHeightTextBox.Text = _parameters.NumericalParameters[ParameterType.SideHeight].Value.ToString("F1");
-            BowlRadiusTextBox.Text = _parameters.NumericalParameters[ParameterType.BowlRadius].Value.ToString("F1");
-            StalkRadiusTextBox.Text = _parameters.NumericalParameters[ParameterType.StalkRadius].Value.ToString("F1");
-            SideAngleTextBox.Text = _parameters.NumericalParameters[ParameterType.SideAngle].Value.ToString("F1");
-            StandRadiusTextBox.Text = _parameters.NumericalParameters[ParameterType.StandRadius].Value.ToString("F1");
+            // Используем цикл для обновления всех полей и их вида
+            foreach (var entry in _controlMap)
+            {
+                var (textBox, toolTip, _) = entry.Value;
+                var param = _parameters.NumericalParameters[entry.Key];
 
-            // Обновляем все метки с ограничениями.
+                textBox.Text = param.Value.ToString("F1");
+                textBox.BackColor = Color.White;
+                toolTip.Hide(textBox);
+            }
+
             UpdateAllLimitLabels();
-
-            // Убираем все красные подсветки и прячем все всплывающие подсказки.
-            StalkHeightTextBox.BackColor = Color.White; ErrorToolTip1.Hide(StalkHeightTextBox);
-            SideHeightTextBox.BackColor = Color.White; ErrorToolTip2.Hide(SideHeightTextBox);
-            BowlRadiusTextBox.BackColor = Color.White; ErrorToolTip3.Hide(BowlRadiusTextBox);
-            StalkRadiusTextBox.BackColor = Color.White; ErrorToolTip4.Hide(StalkRadiusTextBox);
-            SideAngleTextBox.BackColor = Color.White; ErrorToolTip5.Hide(SideAngleTextBox);
-            StandRadiusTextBox.BackColor = Color.White; ErrorToolTip6.Hide(StandRadiusTextBox);
         }
     }
 }
