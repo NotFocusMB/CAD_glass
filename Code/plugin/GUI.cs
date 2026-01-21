@@ -139,31 +139,38 @@ namespace glass_plugin
 
         #region TextChanged Event Handlers
 
+        //TODO: XML
+        //TODO: duplication
         private void StalkHeightTextBox_TextChanged(object sender, EventArgs e)
         {
             ValidateAndUpdate(ParameterType.StalkHeight);
         }
 
+        //TODO: duplication
         private void SideHeightTextBox_TextChanged(object sender, EventArgs e)
         {
             ValidateAndUpdate(ParameterType.SideHeight);
         }
 
+        //TODO: duplication
         private void BowlRadiusTextBox_TextChanged(object sender, EventArgs e)
         {
             ValidateAndUpdate(ParameterType.BowlRadius);
         }
 
+        //TODO: duplication
         private void StalkRadiusTextBox_TextChanged(object sender, EventArgs e)
         {
             ValidateAndUpdate(ParameterType.StalkRadius);
         }
 
+        //TODO: duplication
         private void SideAngleTextBox_TextChanged(object sender, EventArgs e)
         {
             ValidateAndUpdate(ParameterType.SideAngle);
         }
 
+        //TODO: duplication
         private void StandRadiusTextBox_TextChanged(object sender, EventArgs e)
         {
             ValidateAndUpdate(ParameterType.StandRadius);

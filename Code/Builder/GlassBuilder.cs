@@ -7,13 +7,11 @@ using System;
 
 namespace GlassPlugin
 {
-    //TODO: rsdn +
     /// <summary>
     /// Класс для построения модели бокала в КОМПАС 3D.
     /// </summary>
     public class GlassBuilder
     {
-        //TODO: rsdn +
         /// <summary>
         /// Обертка для взаимодействия с API КОМПАС 3D.
         /// </summary>
@@ -34,7 +32,6 @@ namespace GlassPlugin
                 Console.WriteLine("1. Подключение к КОМПАС...");
                 if (!_wrapper.TestConnection())
                 {
-                    //TODO: rsdn +
                     throw new InvalidOperationException("Не удалось подключиться"
                         + " к КОМПАС. Убедитесь, что КОМПАС 3D установлен"
                         + " и запущен.");
@@ -49,7 +46,6 @@ namespace GlassPlugin
 
                 // 3. Получение параметров
                 Console.WriteLine("3. Чтение параметров...");
-                //TODO: rsdn +
                 var numParams = parameters.NumericalParameters;
                 double stalkHeight = numParams[ParameterType.StalkHeight].Value;
                 double sideHeight = numParams[ParameterType.SideHeight].Value;
@@ -60,14 +56,12 @@ namespace GlassPlugin
 
                 // 4. Проверка параметров
                 Console.WriteLine("4. Проверка параметров...");
-                //TODO: rsdn +
                 ValidateParameters(stalkHeight, sideHeight, bowlRadius,
                     stalkRadius, sideAngle, standRadius);
                 Console.WriteLine("   ✓ Параметры корректны");
 
                 // 5. Построение профиля бокала
                 Console.WriteLine("5. Построение профиля бокала...");
-                //TODO: rsdn +
                 BuildGlassProfile(stalkHeight, sideHeight, bowlRadius,
                     stalkRadius, sideAngle, standRadius);
                 Console.WriteLine("=== ПОСТРОЕНИЕ БОКАЛА ЗАВЕРШЕНО УСПЕШНО! ===");
@@ -95,7 +89,6 @@ namespace GlassPlugin
         {
             // Получаем ссылку на деталь из нашего Wrapper
             var part = _wrapper.GetPart();
-            //TODO: {} +
             if (part == null)
             {
                 throw new Exception("Не удалось получить интерфейс детали"
@@ -104,6 +97,7 @@ namespace GlassPlugin
 
             // Рассчитываем толщину стенок
             double wallThickness = stalkRadius / 2.0;
+            //TODO: {}
             if (wallThickness < 1) wallThickness = 1.0;
 
             // Создаем эскиз
@@ -132,7 +126,6 @@ namespace GlassPlugin
                 var p5_center = (X: 0.0, Y: stalkRadius + stalkHeight + bowlRadius);
                 var p5_end = (X: bowlRadius, Y: stalkRadius + stalkHeight + bowlRadius);
                 var p6_angleRad = sideAngle * Math.PI / 180.0;
-                //TODO: rsdn +
                 var p6_X = p5_end.X - sideHeight * Math.Sin(p6_angleRad);
                 var p6_Y = p5_end.Y + sideHeight * Math.Cos(p6_angleRad);
                 var p6 = (X: p6_X, Y: p6_Y);
@@ -153,7 +146,6 @@ namespace GlassPlugin
                 var p10_inner_stand_corner = (X: 0.0, Y: 0.0);
 
                 doc2D.ksLineSeg(p6.X, p6.Y, p7_inner_top.X, p7_inner_top.Y, 1);
-                //TODO: rsdn +
                 doc2D.ksLineSeg(p7_inner_top.X, p7_inner_top.Y,
                     p8_inner_arc_end.X, p8_inner_arc_end.Y, 1);
                 doc2D.ksArcByPoint(p5_center.X, p5_center.Y, innerBowlRadius,
@@ -207,8 +199,6 @@ namespace GlassPlugin
             double bowlRadius, double stalkRadius, double sideAngle,
             double standRadius)
         {
-            //TODO: {} +
-            //TODO: rsdn +
             if (stalkHeight <= 0)
             {
                 throw new ArgumentException("Высота ножки должна быть положительной");
@@ -238,29 +228,23 @@ namespace GlassPlugin
 
             // Проверка минимальной толщины
             double wallThickness = stalkRadius / 2.0;
-            //TODO: {} +
             if (wallThickness < 0.1)
             {
-                //TODO: rsdn +
                 throw new ArgumentException("Толщина стенок слишком мала:"
                     + $" {wallThickness:F2} мм");
             }
 
-            //TODO: {} +
             // Проверка геометрической совместимости
             if (bowlRadius <= wallThickness)
             {
-                //TODO: rsdn +
                 double bowlRadiusInvariant = bowlRadius;
                 double wallThicknessInvariant = wallThickness;
                 throw new ArgumentException($"Радиус чаши ({bowlRadiusInvariant}) должен"
                     + $" быть больше толщины стенок ({wallThicknessInvariant:F2})");
             }
 
-            //TODO: {} +
             if (standRadius <= wallThickness)
             {
-                //TODO: rsdn +
                 throw new ArgumentException("Радиус основания"
                     + $" ({standRadius}) должен быть больше толщины стенок"
                     + $" ({wallThickness:F2})");
@@ -275,7 +259,6 @@ namespace GlassPlugin
         {
             try
             {
-                //TODO: rsdn +
                 var numParams = parameters.NumericalParameters;
                 double stalkHeight = numParams[ParameterType.StalkHeight].Value;
                 double sideHeight = numParams[ParameterType.SideHeight].Value;

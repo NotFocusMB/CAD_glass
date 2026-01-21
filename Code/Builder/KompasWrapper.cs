@@ -12,7 +12,6 @@ namespace Builder
     /// </summary>
     public class KompasWrapper
     {
-        //TODO: rsdn +
         /// <summary>
         /// Главный объект для взаимодействия с API КОМПАС-3D.
         /// </summary>
@@ -183,7 +182,6 @@ namespace Builder
                 var sketchDef = (ksSketchDefinition)sketch.GetDefinition();
                 sketchDef.EndEdit();
             }
-            //TODO: error! +
             catch (Exception ex)
             {
                 Console.WriteLine($"Ошибка завершения редактирования: {ex.Message}");
@@ -206,7 +204,6 @@ namespace Builder
             {
                 doc2D.ksLineSeg(x1, y1, x2, y2, style);
             }
-            //TODO: error! +
             catch (Exception ex)
             {
                 Console.WriteLine($"Ошибка рисования отрезка: {ex.Message}");
@@ -232,14 +229,12 @@ namespace Builder
                 doc2D.ksArcByAngle(centerX, centerY, radius,
                     startAngle, endAngle, 1, style);
             }
-            //TODO: error! +
             catch (Exception ex)
             {
                 Console.WriteLine($"Ошибка рисования дуги: {ex.Message}");
             }
         }
 
-        //TODO: rsdn +
         /// <summary>
         /// Создает тело вращения на основе эскиза. 
         /// </summary>
