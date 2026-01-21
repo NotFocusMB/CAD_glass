@@ -153,10 +153,13 @@ namespace Core
         /// </summary>
         private void ApplyStandBowlRadiusDependency()
         {
-            double bowlRadius = NumericalParameters[ParameterType.BowlRadius].Value;
-            double standRadius = NumericalParameters[ParameterType.StandRadius].Value;
+            double bowlRadius = 
+                NumericalParameters[ParameterType.BowlRadius].Value;
+            double standRadius = 
+                NumericalParameters[ParameterType.StandRadius].Value;
 
-            var standRadiusParam = NumericalParameters[ParameterType.StandRadius];
+            var standRadiusParam = 
+                NumericalParameters[ParameterType.StandRadius];
             standRadiusParam.MinValue = Math.Max(standRadiusParam.MinValue,
                 (2.0 / 3.0) * bowlRadius);
 
@@ -170,15 +173,19 @@ namespace Core
         /// </summary>
         private void ApplySideHeightAngleDependency()
         {
-            double sideHeight = NumericalParameters[ParameterType.SideHeight].Value;
-            double bowlRadius = NumericalParameters[ParameterType.BowlRadius].Value;
-            double sideAngle = NumericalParameters[ParameterType.SideAngle].Value;
+            double sideHeight = 
+                NumericalParameters[ParameterType.SideHeight].Value;
+            double bowlRadius = 
+                NumericalParameters[ParameterType.BowlRadius].Value;
+            double sideAngle = 
+                NumericalParameters[ParameterType.SideAngle].Value;
             double angleRad = sideAngle * Math.PI / 180.0;
 
             // Ограничение для SideHeight
             if (Math.Sin(angleRad) > 0.001)
             {
-                var sideHeightParam = NumericalParameters[ParameterType.SideHeight];
+                var sideHeightParam = 
+                    NumericalParameters[ParameterType.SideHeight];
                 var maxSideHeight = (bowlRadius / 2.0) / Math.Sin(angleRad);
                 sideHeightParam.MaxValue = Math.Min(sideHeightParam.MaxValue,
                     maxSideHeight);
@@ -190,7 +197,8 @@ namespace Core
                 var sinMaxAngle = (bowlRadius / 2.0) / sideHeight;
                 if (sinMaxAngle <= 1 && sinMaxAngle > 0)
                 {
-                    var sideAngleParam = NumericalParameters[ParameterType.SideAngle];
+                    var sideAngleParam = 
+                        NumericalParameters[ParameterType.SideAngle];
                     var maxAngle = Math.Asin(sinMaxAngle) * 180.0 / Math.PI;
                     sideAngleParam.MaxValue = Math.Min(sideAngleParam.MaxValue,
                         maxAngle);
@@ -198,7 +206,8 @@ namespace Core
             }
 
             // Ограничение для BowlRadius
-            var bowlRadiusParam = NumericalParameters[ParameterType.BowlRadius];
+            var bowlRadiusParam = 
+                NumericalParameters[ParameterType.BowlRadius];
             var minBowlRadius = 2.0 * sideHeight * Math.Sin(angleRad);
             bowlRadiusParam.MinValue = Math.Max(bowlRadiusParam.MinValue,
                 minBowlRadius);

@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace Core
 {
-    //TODO: rsdn (исправлено)
+    //TODO: rsdn +
     /// <summary>
     /// Определяет типы числовых параметров, используемых в модели бокала.
     /// </summary>
     public enum ParameterType
     {
-        //TODO: rsdn (исправлено)
+        //TODO: rsdn +
         /// <summary>
         /// Высота ножки бокала.
         /// </summary>
