@@ -74,7 +74,7 @@ namespace BuilderTest
             parameters.NumericalParameters[ParameterType.BowlRadius].Value = 1.4;
             parameters.NumericalParameters[ParameterType.StalkRadius].Value = 3;
 
-            Action act = () => _builder.BuildGlass(parameters);
+            Action act = () => _builder.BuildGlass(parameters, false);
 
             act.Should().Throw<ArgumentException>()
                .WithMessage("*Ошибка построения бокала*");
@@ -84,7 +84,7 @@ namespace BuilderTest
                             " вызывает исключение")]
         public void BuildGlass_WithNullParameters_ShouldThrow()
         {
-            Action act = () => _builder.BuildGlass(null);
+            Action act = () => _builder.BuildGlass(null, false);
             act.Should().Throw<ArgumentException>()
                .WithMessage("*Ошибка построения бокала*");
         }
