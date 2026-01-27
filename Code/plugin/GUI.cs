@@ -29,6 +29,8 @@ namespace glass_plugin
         private Dictionary<ParameterType,
             (TextBox TextBox, ToolTip ToolTip, Label Label)> _controlMap;
 
+        private Dictionary<TextBox, ParameterType> _textBoxMapping;
+
         /// <summary>
         /// Конструктор формы.
         /// </summary>
@@ -45,6 +47,7 @@ namespace glass_plugin
             _parameters = new Parameters();
             _builder = new GlassBuilder();
             InitializeControlMap();
+            InitializeTextBoxMapping();
             ResetFormToDefaults();
         }
 
@@ -71,6 +74,27 @@ namespace glass_plugin
         }
 
         /// <summary>
+        /// Инициализирует словарь для связи типов параметров с элементами UI.
+        /// </summary>
+        private void InitializeTextBoxMapping()
+        {
+            _textBoxMapping = new Dictionary<TextBox, ParameterType>
+            {
+                { StalkHeightTextBox, ParameterType.StalkHeight },
+                { SideHeightTextBox, ParameterType.SideHeight },
+                { BowlRadiusTextBox, ParameterType.BowlRadius },
+                { StalkRadiusTextBox, ParameterType.StalkRadius },
+                { SideAngleTextBox, ParameterType.SideAngle },
+                { StandRadiusTextBox, ParameterType.StandRadius }
+            };
+
+            foreach (var kvp in _textBoxMapping)
+            {
+                kvp.Key.TextChanged += UnifiedTextChangedHandler;
+            }
+        }
+
+        /// <summary>
         /// Обновляет все метки с ограничениями на форме.
         /// </summary>
         private void UpdateAllLimitLabels()
@@ -88,7 +112,9 @@ namespace glass_plugin
         {
             if (CheckAll())
             {
-                _builder.BuildGlass(_parameters);
+                bool createHandle = HandleCheckBox.Checked;
+                _builder.BuildGlass(_parameters, createHandle);
+                CalculateAndShowCharacteristics();
                 MessageBox.Show("Построение бокала начато!", "Информация",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -97,6 +123,51 @@ namespace glass_plugin
                 MessageBox.Show("Пожалуйста, исправьте все поля, выделенные красным!",
                     "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        /// <summary>
+        /// Вычисление и отображение характеристик бокала.
+        /// </summary>
+        private void CalculateAndShowCharacteristics()
+        {
+            var numParams = _parameters.NumericalParameters;
+            double stalkHeight = numParams[ParameterType.StalkHeight].Value;
+            double bowlRadius = numParams[ParameterType.BowlRadius].Value;
+            double stalkRadius = numParams[ParameterType.StalkRadius].Value;
+            double standRadius = numParams[ParameterType.StandRadius].Value;
+            double sideAngle = numParams[ParameterType.SideAngle].Value;
+            double sideHeight = numParams[ParameterType.SideHeight].Value;
+
+            double angleRad = sideAngle * Math.PI / 180.0;
+            double wallVerticalProjection = sideHeight * Math.Cos(angleRad);
+            double totalHeight = stalkRadius + stalkHeight + bowlRadius
+                + wallVerticalProjection;
+
+            double standArea = Math.PI * Math.Pow(standRadius, 2);
+
+            double wallThickness = stalkRadius / 2.0;
+            double innerBowlRadius = bowlRadius - wallThickness;
+
+            double volumeHemisphere = (2.0 / 3.0) * Math.PI
+                * Math.Pow(innerBowlRadius, 3);
+
+            double h_frustum = wallVerticalProjection;
+            double R_large = innerBowlRadius;
+            double r_small = innerBowlRadius - (sideHeight * Math.Sin(angleRad));
+            double radiiSum = Math.Pow(R_large, 2) + R_large * r_small
+                + Math.Pow(r_small, 2);
+            double volumeFrustum = (1.0 / 3.0) * Math.PI * h_frustum * radiiSum;
+
+            double bowlVolumeMm3 = volumeHemisphere + volumeFrustum;
+            double bowlVolumeMl = bowlVolumeMm3 / 1000.0;
+
+            TotalHeightLabel.Text = $"{totalHeight:F1} мм";
+            AreaLabel.Text = $"{standArea:F1} мм²";
+            VolumeLabelMM.Text = $"{bowlVolumeMm3:F0} мм³";
+            VolumeLabelML.Text = $"{bowlVolumeMl:F1} мл";
+
+            this.Width = 436;
+            CalculationsGroupBox.Visible = true;
         }
 
         /// <summary>
@@ -139,41 +210,16 @@ namespace glass_plugin
 
         #region TextChanged Event Handlers
 
-        //TODO: XML
-        //TODO: duplication
-        private void StalkHeightTextBox_TextChanged(object sender, EventArgs e)
+        /// <summary>
+        /// Универсальный обработчик изменения текста в TextBox.
+        /// </summary>
+        private void UnifiedTextChangedHandler(object sender, EventArgs e)
         {
-            ValidateAndUpdate(ParameterType.StalkHeight);
-        }
-
-        //TODO: duplication
-        private void SideHeightTextBox_TextChanged(object sender, EventArgs e)
-        {
-            ValidateAndUpdate(ParameterType.SideHeight);
-        }
-
-        //TODO: duplication
-        private void BowlRadiusTextBox_TextChanged(object sender, EventArgs e)
-        {
-            ValidateAndUpdate(ParameterType.BowlRadius);
-        }
-
-        //TODO: duplication
-        private void StalkRadiusTextBox_TextChanged(object sender, EventArgs e)
-        {
-            ValidateAndUpdate(ParameterType.StalkRadius);
-        }
-
-        //TODO: duplication
-        private void SideAngleTextBox_TextChanged(object sender, EventArgs e)
-        {
-            ValidateAndUpdate(ParameterType.SideAngle);
-        }
-
-        //TODO: duplication
-        private void StandRadiusTextBox_TextChanged(object sender, EventArgs e)
-        {
-            ValidateAndUpdate(ParameterType.StandRadius);
+            if (sender is TextBox textBox 
+                && _textBoxMapping.TryGetValue(textBox, out ParameterType paramType))
+            {
+                ValidateAndUpdate(paramType);
+            }
         }
 
         #endregion

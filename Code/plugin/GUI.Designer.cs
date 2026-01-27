@@ -56,7 +56,18 @@
             this.ErrorToolTip5 = new System.Windows.Forms.ToolTip(this.components);
             this.ErrorToolTip6 = new System.Windows.Forms.ToolTip(this.components);
             this.ResetButton = new System.Windows.Forms.Button();
+            this.HandleCheckBox = new System.Windows.Forms.CheckBox();
+            this.CalculationsGroupBox = new System.Windows.Forms.GroupBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.AreaLabel = new System.Windows.Forms.Label();
+            this.TotalHeightLabel = new System.Windows.Forms.Label();
+            this.VolumeLabelMM = new System.Windows.Forms.Label();
+            this.VolumeLabelML = new System.Windows.Forms.Label();
             this.groupBoxParameters.SuspendLayout();
+            this.CalculationsGroupBox.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBoxParameters
@@ -183,7 +194,7 @@
             this.StandRadiusTextBox.Size = new System.Drawing.Size(73, 20);
             this.StandRadiusTextBox.TabIndex = 7;
             this.StandRadiusTextBox.Text = "30";
-            this.StandRadiusTextBox.TextChanged += new System.EventHandler(this.StandRadiusTextBox_TextChanged);
+            this.StandRadiusTextBox.TextChanged += new System.EventHandler(this.UnifiedTextChangedHandler);
             // 
             // SideAngleTextBox
             // 
@@ -192,7 +203,7 @@
             this.SideAngleTextBox.Size = new System.Drawing.Size(73, 20);
             this.SideAngleTextBox.TabIndex = 6;
             this.SideAngleTextBox.Text = "10";
-            this.SideAngleTextBox.TextChanged += new System.EventHandler(this.SideAngleTextBox_TextChanged);
+            this.SideAngleTextBox.TextChanged += new System.EventHandler(this.UnifiedTextChangedHandler);
             // 
             // StalkRadiusTextBox
             // 
@@ -201,7 +212,7 @@
             this.StalkRadiusTextBox.Size = new System.Drawing.Size(73, 20);
             this.StalkRadiusTextBox.TabIndex = 5;
             this.StalkRadiusTextBox.Text = "2";
-            this.StalkRadiusTextBox.TextChanged += new System.EventHandler(this.StalkRadiusTextBox_TextChanged);
+            this.StalkRadiusTextBox.TextChanged += new System.EventHandler(this.UnifiedTextChangedHandler);
             // 
             // BowlRadiusTextBox
             // 
@@ -210,7 +221,7 @@
             this.BowlRadiusTextBox.Size = new System.Drawing.Size(73, 20);
             this.BowlRadiusTextBox.TabIndex = 4;
             this.BowlRadiusTextBox.Text = "35";
-            this.BowlRadiusTextBox.TextChanged += new System.EventHandler(this.BowlRadiusTextBox_TextChanged);
+            this.BowlRadiusTextBox.TextChanged += new System.EventHandler(this.UnifiedTextChangedHandler);
             // 
             // SideHeightTextBox
             // 
@@ -219,7 +230,7 @@
             this.SideHeightTextBox.Size = new System.Drawing.Size(73, 20);
             this.SideHeightTextBox.TabIndex = 3;
             this.SideHeightTextBox.Text = "40";
-            this.SideHeightTextBox.TextChanged += new System.EventHandler(this.SideHeightTextBox_TextChanged);
+            this.SideHeightTextBox.TextChanged += new System.EventHandler(this.UnifiedTextChangedHandler);
             // 
             // StalkHeightTextBox
             // 
@@ -228,7 +239,7 @@
             this.StalkHeightTextBox.Size = new System.Drawing.Size(73, 20);
             this.StalkHeightTextBox.TabIndex = 2;
             this.StalkHeightTextBox.Text = "75";
-            this.StalkHeightTextBox.TextChanged += new System.EventHandler(this.StalkHeightTextBox_TextChanged);
+            this.StalkHeightTextBox.TextChanged += new System.EventHandler(this.UnifiedTextChangedHandler);
             // 
             // labelRadius
             // 
@@ -268,20 +279,128 @@
             this.ResetButton.UseVisualStyleBackColor = true;
             this.ResetButton.Click += new System.EventHandler(this.ResetButton_Click);
             // 
+            // HandleCheckBox
+            // 
+            this.HandleCheckBox.AutoSize = true;
+            this.HandleCheckBox.Location = new System.Drawing.Point(217, 13);
+            this.HandleCheckBox.Name = "HandleCheckBox";
+            this.HandleCheckBox.Size = new System.Drawing.Size(94, 17);
+            this.HandleCheckBox.TabIndex = 16;
+            this.HandleCheckBox.Text = "Ручка бокала";
+            this.HandleCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // CalculationsGroupBox
+            // 
+            this.CalculationsGroupBox.Controls.Add(this.AreaLabel);
+            this.CalculationsGroupBox.Controls.Add(this.label1);
+            this.CalculationsGroupBox.Controls.Add(this.TotalHeightLabel);
+            this.CalculationsGroupBox.Controls.Add(this.label2);
+            this.CalculationsGroupBox.Controls.Add(this.VolumeLabelMM);
+            this.CalculationsGroupBox.Controls.Add(this.label3);
+            this.CalculationsGroupBox.Controls.Add(this.VolumeLabelML);
+            this.CalculationsGroupBox.Controls.Add(this.label4);
+            this.CalculationsGroupBox.Location = new System.Drawing.Point(216, 36);
+            this.CalculationsGroupBox.Name = "CalculationsGroupBox";
+            this.CalculationsGroupBox.Size = new System.Drawing.Size(200, 117);
+            this.CalculationsGroupBox.TabIndex = 17;
+            this.CalculationsGroupBox.TabStop = false;
+            this.CalculationsGroupBox.Text = "Характеристики бокала";
+            this.CalculationsGroupBox.Visible = false;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(6, 26);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(107, 13);
+            this.label1.TabIndex = 0;
+            this.label1.Text = "Объем бокала (мл):";
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(6, 49);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(109, 13);
+            this.label2.TabIndex = 18;
+            this.label2.Text = "Объем бокала (мм):";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(6, 72);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(87, 13);
+            this.label3.TabIndex = 19;
+            this.label3.Text = "Высота бокала:";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(6, 96);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(114, 13);
+            this.label4.TabIndex = 20;
+            this.label4.Text = "Площадь основания:";
+            // 
+            // AreaLabel
+            // 
+            this.AreaLabel.AutoSize = true;
+            this.AreaLabel.Location = new System.Drawing.Point(126, 96);
+            this.AreaLabel.Name = "AreaLabel";
+            this.AreaLabel.Size = new System.Drawing.Size(13, 13);
+            this.AreaLabel.TabIndex = 24;
+            this.AreaLabel.Text = "0";
+            // 
+            // TotalHeightLabel
+            // 
+            this.TotalHeightLabel.AutoSize = true;
+            this.TotalHeightLabel.Location = new System.Drawing.Point(126, 72);
+            this.TotalHeightLabel.Name = "TotalHeightLabel";
+            this.TotalHeightLabel.Size = new System.Drawing.Size(13, 13);
+            this.TotalHeightLabel.TabIndex = 23;
+            this.TotalHeightLabel.Text = "0";
+            // 
+            // VolumeLabelMM
+            // 
+            this.VolumeLabelMM.AutoSize = true;
+            this.VolumeLabelMM.Location = new System.Drawing.Point(126, 49);
+            this.VolumeLabelMM.Name = "VolumeLabelMM";
+            this.VolumeLabelMM.Size = new System.Drawing.Size(13, 13);
+            this.VolumeLabelMM.TabIndex = 22;
+            this.VolumeLabelMM.Text = "0";
+            // 
+            // VolumeLabelML
+            // 
+            this.VolumeLabelML.AutoSize = true;
+            this.VolumeLabelML.Location = new System.Drawing.Point(126, 26);
+            this.VolumeLabelML.Name = "VolumeLabelML";
+            this.VolumeLabelML.Size = new System.Drawing.Size(13, 13);
+            this.VolumeLabelML.TabIndex = 21;
+            this.VolumeLabelML.Text = "0";
+            // 
             // GUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(220, 326);
+            this.ClientSize = new System.Drawing.Size(427, 326);
+            this.Controls.Add(this.CalculationsGroupBox);
+            this.Controls.Add(this.HandleCheckBox);
             this.Controls.Add(this.ResetButton);
             this.Controls.Add(this.CreateButton);
             this.Controls.Add(this.groupBoxParameters);
+            this.MaximumSize = new System.Drawing.Size(443, 365);
+            this.MinimumSize = new System.Drawing.Size(443, 365);
             this.Name = "GUI";
+            this.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.Text = "Построитель гранёного стакана";
             this.Load += new System.EventHandler(this.GUI_Load);
             this.groupBoxParameters.ResumeLayout(false);
             this.groupBoxParameters.PerformLayout();
+            this.CalculationsGroupBox.ResumeLayout(false);
+            this.CalculationsGroupBox.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -313,6 +432,16 @@
         private System.Windows.Forms.ToolTip ErrorToolTip5;
         private System.Windows.Forms.ToolTip ErrorToolTip6;
         private System.Windows.Forms.Button ResetButton;
+        private System.Windows.Forms.CheckBox HandleCheckBox;
+        private System.Windows.Forms.GroupBox CalculationsGroupBox;
+        private System.Windows.Forms.Label AreaLabel;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label TotalHeightLabel;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label VolumeLabelMM;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label VolumeLabelML;
+        private System.Windows.Forms.Label label4;
     }
 }
 

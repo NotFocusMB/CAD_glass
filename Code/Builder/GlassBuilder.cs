@@ -21,7 +21,7 @@ namespace GlassPlugin
         /// Функция, запускающая и проводящая процесс постройки бокала.
         /// </summary>
         /// <param name="parameters">Параметры для постройки.</param>
-        public void BuildGlass(Parameters parameters)
+        public void BuildGlass(Parameters parameters, bool createHandle)
         {
             try
             {
@@ -63,7 +63,7 @@ namespace GlassPlugin
                 // 5. Построение профиля бокала
                 Console.WriteLine("5. Построение профиля бокала...");
                 BuildGlassProfile(stalkHeight, sideHeight, bowlRadius,
-                    stalkRadius, sideAngle, standRadius);
+                    stalkRadius, sideAngle, standRadius, createHandle);
                 Console.WriteLine("=== ПОСТРОЕНИЕ БОКАЛА ЗАВЕРШЕНО УСПЕШНО! ===");
             }
             catch (Exception ex)
@@ -83,9 +83,10 @@ namespace GlassPlugin
         /// <param name="stalkRadius">Радиус ножки.</param>
         /// <param name="sideAngle">Угол наклона стенки.</param>
         /// <param name="standRadius">Радиус основания.</param>
+        /// <param name="createHandle">Наличие ручки.</param>
         private void BuildGlassProfile(double stalkHeight, double sideHeight,
             double bowlRadius, double stalkRadius, double sideAngle,
-            double standRadius)
+            double standRadius, bool createHandle)
         {
             // Получаем ссылку на деталь из нашего Wrapper
             var part = _wrapper.GetPart();
@@ -97,8 +98,11 @@ namespace GlassPlugin
 
             // Рассчитываем толщину стенок
             double wallThickness = stalkRadius / 2.0;
-            //TODO: {}
-            if (wallThickness < 1) wallThickness = 1.0;
+            //TODO: {} +
+            if (wallThickness < 1)
+            {
+                wallThickness = 1.0;
+            }
 
             // Создаем эскиз
             Console.WriteLine("1. Создание эскиза...");
@@ -180,6 +184,101 @@ namespace GlassPlugin
             {
                 throw new Exception("Не удалось создать вращательное выдавливание"
                     + " (метод Create() вернул false).");
+            }
+
+            if (createHandle)
+            {
+                CreateHandle(part, stalkHeight, stalkRadius, bowlRadius, sideAngle, sideHeight);
+            }
+        }
+
+        /// <summary>
+        /// Строит ручку бокала и выполняет выдавливание по траектории.
+        /// </summary>
+        /// <param name="stalkHeight">Высота ножки.</param>
+        /// <param name="sideHeight">Высота стенки.</param>
+        /// <param name="bowlRadius">Радиус чаши.</param>
+        /// <param name="stalkRadius">Радиус ножки.</param>
+        /// <param name="sideAngle">Угол наклона стенки.</param>
+        /// <param name="sideHeight">Радиус основания.</param>
+        private void CreateHandle(ksPart part, double stalkHeight, double stalkRadius,
+            double bowlRadius, double sideAngle, double sideHeight)
+        {
+            try
+            {
+                var trajectorySketch = 
+                    (ksEntity)part.NewEntity((short)Obj3dType.o3d_sketch);
+                var trajectoryDef = 
+                    (ksSketchDefinition)trajectorySketch.GetDefinition();
+                trajectoryDef.SetPlane
+                    (part.GetDefaultEntity((short)Obj3dType.o3d_planeXOZ));
+                trajectorySketch.Create();
+                var trajDoc2D = (ksDocument2D)trajectoryDef.BeginEdit();
+
+                var bottomPoint = (X: stalkRadius, 
+                    Y: stalkRadius + stalkHeight / 2);
+                var topPoint = (X: 1.5 * bowlRadius, 
+                    Y: stalkRadius + stalkHeight * 5 / 6);
+                var middlePoint = (X: bowlRadius, 
+                    Y: stalkRadius + stalkHeight / 2);
+
+                var bottomPoint2 = (X: 1.5 * bowlRadius, 
+                    Y: stalkRadius + stalkHeight + 0.5 * bowlRadius);
+                var topPoint2 = (X: bowlRadius + 5,
+                    Y: stalkRadius + stalkHeight + bowlRadius + stalkRadius);
+                var middlePoint2 = (X: bowlRadius * 1.45,
+                    Y: stalkRadius + stalkHeight + bowlRadius * 0.75);
+
+                trajDoc2D.ksLineSeg(topPoint2.X, topPoint2.Y, 
+                    bowlRadius - stalkRadius * 0.5, 
+                    2 * stalkRadius + stalkHeight + bowlRadius, 1);
+                trajDoc2D.ksLineSeg(topPoint.X, topPoint.Y, 
+                    bottomPoint2.X, bottomPoint2.Y, 1);
+                trajDoc2D.ksArcBy3Points(bottomPoint.X, bottomPoint.Y,
+                    middlePoint.X, middlePoint.Y, topPoint.X, topPoint.Y, 1);
+                trajDoc2D.ksArcBy3Points(bottomPoint2.X, bottomPoint2.Y,
+                    middlePoint2.X, middlePoint2.Y, topPoint2.X, topPoint2.Y, 1);
+                trajectoryDef.EndEdit();
+
+                var profilePlane = 
+                    (ksEntity)part.NewEntity((short)Obj3dType.o3d_planeOffset);
+                var profilePlaneDef = 
+                    (ksPlaneOffsetDefinition)profilePlane.GetDefinition();
+                profilePlaneDef.SetPlane
+                    (part.GetDefaultEntity((short)Obj3dType.o3d_planeYOZ));
+                profilePlaneDef.offset = -bottomPoint.X;
+                profilePlane.Create();
+
+                var profileSketch = 
+                    (ksEntity)part.NewEntity((short)Obj3dType.o3d_sketch);
+                var profileDef = 
+                    (ksSketchDefinition)profileSketch.GetDefinition();
+                profileDef.SetPlane(profilePlane);
+                profileSketch.Create();
+
+                var profDoc2D = (ksDocument2D)profileDef.BeginEdit();
+                profDoc2D.ksCircle(bottomPoint.Y, 0, stalkRadius, 1);
+                profileDef.EndEdit();
+
+                var kinematicElement = 
+                    part.NewEntity((short)Obj3dType.o3d_baseEvolution);
+                var definition = 
+                    (ksBaseEvolutionDefinition)kinematicElement.GetDefinition();
+                definition.SetSketch(profileSketch);
+                var entityCollection = 
+                    (ksEntityCollection)definition.PathPartArray();
+                entityCollection.Clear();
+                entityCollection.Add(trajectorySketch);
+
+                if (!kinematicElement.Create())
+                {
+                    throw new Exception("Не удалось создать кинематическую операцию.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"      - Ошибка при создании ручки: {ex.Message}");
+                throw;
             }
         }
 
