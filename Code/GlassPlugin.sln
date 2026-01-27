@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreTest", "CoreTest\CoreTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuilderTest", "BuilderTest\BuilderTest.csproj", "{EE9422ED-EE20-4093-910F-9E04E71FA3FD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GlassStressTest", "GlassStressTest\GlassStressTest.csproj", "{07754D26-D048-4CB6-B0A8-1712948923B4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{EE9422ED-EE20-4093-910F-9E04E71FA3FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE9422ED-EE20-4093-910F-9E04E71FA3FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EE9422ED-EE20-4093-910F-9E04E71FA3FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07754D26-D048-4CB6-B0A8-1712948923B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07754D26-D048-4CB6-B0A8-1712948923B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07754D26-D048-4CB6-B0A8-1712948923B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07754D26-D048-4CB6-B0A8-1712948923B4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

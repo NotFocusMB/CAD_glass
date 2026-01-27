@@ -15,7 +15,7 @@ namespace GlassPlugin
         /// <summary>
         /// Обертка для взаимодействия с API КОМПАС 3D.
         /// </summary>
-        private KompasWrapper _wrapper;
+        private static KompasWrapper _wrapper;
 
         /// <summary>
         /// Функция, запускающая и проводящая процесс постройки бокала.
@@ -26,7 +26,17 @@ namespace GlassPlugin
             try
             {
                 Console.WriteLine("=== НАЧАЛО ПОСТРОЕНИЯ БОКАЛА ===");
-                _wrapper = new KompasWrapper();
+                // Если wrapper еще не создан - создаем, иначе используем существующий
+                if (_wrapper == null)
+                {
+                    _wrapper = new KompasWrapper();
+                }
+                else
+                {
+                    // Закрываем предыдущий документ ПЕРЕД созданием нового
+                    Console.WriteLine("Закрытие предыдущего документа...");
+                    _wrapper.CloseDocument();
+                }
 
                 // 1. Подключение к КОМПАС
                 Console.WriteLine("1. Подключение к КОМПАС...");
@@ -37,6 +47,7 @@ namespace GlassPlugin
                         + " и запущен.");
                 }
                 Console.WriteLine("   ✓ Подключение успешно");
+
 
                 // 2. Создание документа
                 Console.WriteLine("2. Запуск КОМПАС и создание документа...");

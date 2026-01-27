@@ -317,6 +317,19 @@ namespace Builder
         }
 
         /// <summary>
+        /// Закрывает текущий открытый документ КОМПАС без сохранения
+        /// </summary>
+        public void CloseDocument()
+        {
+            if (_document3D != null)
+            {
+                _document3D.close();
+                _document3D = null;
+                _part = null;
+            }
+        }
+
+        /// <summary>
         /// Выполняет сброс (в данной реализации - заглушка).
         /// </summary>
         public void ResetAllSketches()
