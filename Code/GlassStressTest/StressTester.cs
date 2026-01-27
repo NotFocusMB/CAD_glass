@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using Core;
 using GlassPlugin;
-using Microsoft.VisualBasic.Devices;
 
 namespace GlassPluginStressTests
 {
@@ -15,295 +14,390 @@ namespace GlassPluginStressTests
         /// <summary>
         /// Коэффициент преобразования байтов в гигабайты.
         /// </summary>
-        private const double GIGABYTE_IN_BYTE =
+        private const double GB_CONVERSION =
             0.000000000931322574615478515625;
 
         /// <summary>
-        /// Объект для получения информации о системе.
+        /// Минимальный допустимый объем доступной памяти в ГБ.
+        /// При достижении этого значения тест будет остановлен.
         /// </summary>
-        private readonly ComputerInfo _computerInfo;
+        private const double MIN_AVAILABLE_MEMORY_GB = 1.0;
 
         /// <summary>
-        /// Директория для сохранения логов.
+        /// Директория для сохранения логов тестирования.
         /// </summary>
         private readonly string _logsDirectory;
-
-        /// <summary>
-        /// Флаг остановки тестирования.
-        /// </summary>
-        private volatile bool _stopRequested = false;
 
         /// <summary>
         /// Инициализирует новый экземпляр класса StressTester.
         /// </summary>
         public StressTester()
         {
-            _computerInfo = new ComputerInfo();
-
-            // Создаем папку для логов
             _logsDirectory = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
                 "StressTestLogs");
-
-            try
-            {
-                if (!Directory.Exists(_logsDirectory))
-                {
-                    Directory.CreateDirectory(_logsDirectory);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Не удалось создать папку логов: {ex.Message}");
-                _logsDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            }
+            Directory.CreateDirectory(_logsDirectory);
         }
 
         /// <summary>
-        /// Выполняет бесконечное нагрузочное тестирование.
+        /// Выполняет нагрузочное тестирование.
         /// </summary>
+        /// <param name="testName">Название теста.</param>
         /// <param name="parameters">Параметры бокала.</param>
-        public void RunInfiniteStressTest(Parameters parameters)
+        /// <param name="buildCount">
+        /// Количество построений (если задано).
+        /// </param>
+        /// <param name="durationMinutes">
+        /// Длительность теста в минутах (если задано).
+        /// </param>
+        /// <param name="createHandle">
+        /// Создавать ручку (по умолчанию - false).
+        /// </param>
+        public void RunTest(string testName, Parameters parameters,
+                           int? buildCount, double? durationMinutes,
+                           bool createHandle = false)
         {
-            Console.WriteLine("=== Нагрузочное тестирование плагина бокала ===");
             Console.WriteLine();
-            Console.WriteLine("Параметры бокала:");
-            PrintParameters(parameters);
-            Console.WriteLine();
-
-            // Информация о системе
-            double totalMemoryGB = _computerInfo.TotalPhysicalMemory * GIGABYTE_IN_BYTE;
-            Console.WriteLine($"Информация о системе:");
-            Console.WriteLine($"  Всего ОЗУ: {totalMemoryGB:F1} ГБ");
-            Console.WriteLine($"  Процессор: {Environment.ProcessorCount} ядер");
-            Console.WriteLine($"  Папка логов: {_logsDirectory}");
+            Console.WriteLine($"=== Начало теста: {testName} ===");
+            PrintParameters(parameters, createHandle);
+            PrintTestMode(buildCount, durationMinutes);
             Console.WriteLine();
 
-            Console.WriteLine("Начало тестирования...");
-            Console.WriteLine("Для остановки нажмите Ctrl+C");
-            Console.WriteLine();
-
-            // Создаем файл для записи результатов
-            string fileName = $"log_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
+            string fileName = $"log_{testName}_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
             string filePath = Path.Combine(_logsDirectory, fileName);
-
-            Console.WriteLine($"Лог файл: {filePath}");
-            Console.WriteLine();
-            Console.WriteLine("Номер\tВремя(мс)\tОЗУ(ГБ)");
-            Console.WriteLine("-------------------------------");
 
             using (var streamWriter = new StreamWriter(filePath))
             {
+                WriteTestHeader(streamWriter);
+
                 var builder = new GlassBuilder();
                 var stopWatch = new Stopwatch();
+                var testStopwatch = new Stopwatch();
                 int count = 0;
-
-                try
-                {
-                    // Устанавливаем обработчик Ctrl+C
-                    Console.CancelKeyPress += OnCancelKeyPress;
-
-                    // Бесконечный цикл как в методичке
-                    while (!_stopRequested)
-                    {
-                        count++;
-
-                        try
-                        {
-                            stopWatch.Restart();
-                            builder.BuildGlass(parameters, false); // Без ручки
-                            stopWatch.Stop();
-                        }
-                        catch (Exception ex)
-                        {
-                            stopWatch.Stop();
-                            Console.WriteLine($"\nОшибка при построении {count}: {ex.Message}");
-                            // Продолжаем тестирование несмотря на ошибку
-                        }
-
-                        // Получаем использование ОЗУ всей системой
-                        var usedMemory = GetTotalSystemMemoryGB();
-
-                        // Время в миллисекундах для графика
-                        double timeMs = stopWatch.Elapsed.TotalMilliseconds;
-
-                        // Записываем в формате из методички
-                        streamWriter.WriteLine(
-                            $"{count}\t{timeMs:F0}\t{usedMemory:F9}");
-                        streamWriter.Flush();
-
-                        // Выводим в консоль каждые итерации
-                        if (count % 1 == 0) // Выводим каждую итерацию
-                        {
-                            Console.Write($"\r{count}\t{timeMs:F0}\t\t{usedMemory:F9}");
-                        }
-
-                        // Небольшая пауза для стабильности
-                        System.Threading.Thread.Sleep(100);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"\n\nОшибка при тестировании: {ex.Message}");
-                }
-                finally
-                {
-                    // Убираем обработчик
-                    Console.CancelKeyPress -= OnCancelKeyPress;
-
-                    Console.WriteLine($"\n\nТестирование завершено.");
-                    Console.WriteLine($"Всего построений: {count}");
-                    Console.WriteLine($"Результаты сохранены в: {filePath}");
-
-                    // Выводим итоговую информацию о памяти
-                    double finalMemoryGB = GetTotalSystemMemoryGB();
-                    Console.WriteLine($"Финальное использование ОЗУ: {finalMemoryGB:F9} ГБ");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Обработчик нажатия Ctrl+C.
-        /// </summary>
-        private void OnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
-        {
-            _stopRequested = true;
-            e.Cancel = true; // Отменяем стандартное поведение
-            Console.WriteLine("\n\nПолучен сигнал остановки (Ctrl+C)...");
-        }
-
-        /// <summary>
-        /// Выполняет тест с фиксированным количеством итераций.
-        /// </summary>
-        /// <param name="parameters">Параметры бокала.</param>
-        /// <param name="iterations">Количество итераций.</param>
-        public void RunFixedStressTest(Parameters parameters, int iterations)
-        {
-            Console.WriteLine($"=== Нагрузочное тестирование ({iterations} итераций) ===");
-            Console.WriteLine();
-            Console.WriteLine("Параметры бокала:");
-            PrintParameters(parameters);
-            Console.WriteLine();
-
-            double totalMemoryGB = _computerInfo.TotalPhysicalMemory * GIGABYTE_IN_BYTE;
-            Console.WriteLine($"Всего ОЗУ в системе: {totalMemoryGB:F1} ГБ");
-            Console.WriteLine($"Папка логов: {_logsDirectory}");
-            Console.WriteLine();
-
-            string fileName = $"log_{iterations}iter_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
-            string filePath = Path.Combine(_logsDirectory, fileName);
-
-            Console.WriteLine($"Лог файл: {filePath}");
-            Console.WriteLine();
-            Console.WriteLine("Прогресс: 0%");
-
-            using (var streamWriter = new StreamWriter(filePath))
-            {
-                var builder = new GlassBuilder();
-                var stopWatch = new Stopwatch();
                 int successfulBuilds = 0;
                 int failedBuilds = 0;
 
                 try
                 {
-                    for (int count = 1; count <= iterations; count++)
+                    testStopwatch.Start();
+
+                    if (buildCount.HasValue)
                     {
-                        if (_stopRequested)
-                        {
-                            Console.WriteLine("\n\nТестирование прервано пользователем.");
-                            break;
-                        }
-
-                        try
-                        {
-                            stopWatch.Restart();
-                            builder.BuildGlass(parameters, false);
-                            stopWatch.Stop();
-                            successfulBuilds++;
-                        }
-                        catch (Exception ex)
-                        {
-                            stopWatch.Stop();
-                            failedBuilds++;
-                            Console.WriteLine($"\nОшибка при построении {count}: {ex.Message}");
-                        }
-
-                        var usedMemory = GetTotalSystemMemoryGB();
-                        double timeMs = stopWatch.Elapsed.TotalMilliseconds;
-
-                        streamWriter.WriteLine(
-                            $"{count}\t{timeMs:F0}\t{usedMemory:F9}");
-                        streamWriter.Flush();
-
-                        if (count % 10 == 0 || count == iterations)
-                        {
-                            double percentage = (count * 100.0) / iterations;
-                            Console.Write($"\rПрогресс: {count}/{iterations} " +
-                                $"({percentage:F1}%) | Успешно: {successfulBuilds} | " +
-                                $"Ошибки: {failedBuilds} | ОЗУ: {usedMemory:F3} ГБ");
-                        }
-
-                        System.Threading.Thread.Sleep(100);
+                        RunIterationTest(builder, parameters, createHandle,
+                            buildCount.Value, streamWriter, stopWatch,
+                            ref count, ref successfulBuilds, ref failedBuilds);
+                    }
+                    else if (durationMinutes.HasValue)
+                    {
+                        RunDurationTest(builder, parameters, createHandle,
+                            durationMinutes.Value, streamWriter, stopWatch,
+                            testStopwatch, ref count,
+                            ref successfulBuilds, ref failedBuilds);
                     }
 
-                    Console.WriteLine($"\n\nТестирование завершено.");
-                    Console.WriteLine($"Всего построений: {Math.Min(iterations, successfulBuilds + failedBuilds)}");
-                    Console.WriteLine($"Успешных: {successfulBuilds}, Ошибок: {failedBuilds}");
-                    Console.WriteLine($"Результаты сохранены в: {filePath}");
-
-                    double finalMemoryGB = GetTotalSystemMemoryGB();
-                    Console.WriteLine($"Финальное использование ОЗУ: {finalMemoryGB:F9} ГБ");
+                    testStopwatch.Stop();
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"\nКритическая ошибка: {ex.Message}");
+                    Console.WriteLine();
+                    Console.WriteLine($"Критическая ошибка теста: {ex.Message}");
+                }
+                finally
+                {
+                    PrintTestResults(testStopwatch, count,
+                        successfulBuilds, failedBuilds, filePath);
                 }
             }
         }
 
         /// <summary>
-        /// Получает общее использование оперативной памяти системой в ГБ.
-        /// Использует ComputerInfo как в методичке.
+        /// Проверяет, не достигнут ли критический уровень памяти.
         /// </summary>
-        /// <returns>Используемая память системой в гигабайтах.</returns>
-        private double GetTotalSystemMemoryGB()
+        /// <returns>
+        /// True, если доступной памяти меньше MIN_AVAILABLE_MEMORY_GB.
+        /// </returns>
+        private bool IsMemoryCritical()
         {
             try
             {
-                // Метод из методички
-                double usedMemory = (_computerInfo.TotalPhysicalMemory
-                    - _computerInfo.AvailablePhysicalMemory) * GIGABYTE_IN_BYTE;
-                return usedMemory;
+                double availableGB = GetAvailableMemoryGB();
+                return availableGB < MIN_AVAILABLE_MEMORY_GB;
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"\nОшибка получения памяти: {ex.Message}");
+                return false; // При ошибке измерения продолжаем тест
+            }
+        }
+
+        /// <summary>
+        /// Получает доступный объем оперативной памяти в ГБ.
+        /// </summary>
+        /// <returns>Доступная память в гигабайтах.</returns>
+        private double GetAvailableMemoryGB()
+        {
+            try
+            {
+                var process = Process.GetCurrentProcess();
+                var pc = new PerformanceCounter("Memory", "Available Bytes");
+                float availableBytes = pc.NextValue();
+                return availableBytes * GB_CONVERSION;
+            }
+            catch
+            {
                 return 0;
             }
         }
 
         /// <summary>
-        /// Выводит параметры бокала в консоль.
+        /// Записывает заголовок лог-файла.
         /// </summary>
-        /// <param name="parameters">Параметры бокала.</param>
-        private void PrintParameters(Parameters parameters)
+        private void WriteTestHeader(StreamWriter streamWriter)
         {
-            var numParams = parameters.NumericalParameters;
-
-            Console.WriteLine($"  Высота ножки: {numParams[ParameterType.StalkHeight].Value} мм");
-            Console.WriteLine($"  Высота стенки: {numParams[ParameterType.SideHeight].Value} мм");
-            Console.WriteLine($"  Радиус чаши: {numParams[ParameterType.BowlRadius].Value} мм");
-            Console.WriteLine($"  Радиус ножки: {numParams[ParameterType.StalkRadius].Value} мм");
-            Console.WriteLine($"  Угол наклона: {numParams[ParameterType.SideAngle].Value}°");
-            Console.WriteLine($"  Радиус основания: {numParams[ParameterType.StandRadius].Value} мм");
+            streamWriter.WriteLine("№\tВремя (мс)\tПамять (ГБ)\tСтатус");
         }
 
         /// <summary>
-        /// Останавливает тестирование.
+        /// Выводит параметры теста в консоль.
         /// </summary>
-        public void StopTesting()
+        /// <param name="parameters">Параметры бокала.</param>
+        /// <param name="createHandle">Флаг создания ручки.</param>
+        private void PrintParameters(Parameters parameters, bool createHandle)
         {
-            _stopRequested = true;
+            Console.WriteLine("Параметры бокала:");
+            var numParams = parameters.NumericalParameters;
+
+            Console.WriteLine($"  Высота ножки: " +
+                $"{numParams[ParameterType.StalkHeight].Value} мм");
+            Console.WriteLine($"  Высота стенки: " +
+                $"{numParams[ParameterType.SideHeight].Value} мм");
+            Console.WriteLine($"  Радиус чаши: " +
+                $"{numParams[ParameterType.BowlRadius].Value} мм");
+            Console.WriteLine($"  Радиус ножки: " +
+                $"{numParams[ParameterType.StalkRadius].Value} мм");
+            Console.WriteLine($"  Угол наклона: " +
+                $"{numParams[ParameterType.SideAngle].Value}°");
+            Console.WriteLine($"  Радиус основания: " +
+                $"{numParams[ParameterType.StandRadius].Value} мм");
+            Console.WriteLine($"  Ручка: {(createHandle ? "Да" : "Нет")}");
+        }
+
+        /// <summary>
+        /// Выводит режим тестирования в консоль.
+        /// </summary>
+        /// <param name="buildCount">Количество итераций.</param>
+        /// <param name="durationMinutes">Длительность теста.</param>
+        private void PrintTestMode(int? buildCount, double? durationMinutes)
+        {
+            if (buildCount.HasValue)
+            {
+                Console.WriteLine($"  Режим: {buildCount.Value} итераций");
+            }
+            else if (durationMinutes.HasValue)
+            {
+                Console.WriteLine($"  Режим: {durationMinutes.Value} минут");
+            }
+        }
+
+        /// <summary>
+        /// Выполняет тест с фиксированным количеством итераций.
+        /// </summary>
+        private void RunIterationTest(GlassBuilder builder,
+            Parameters parameters, bool createHandle, int buildCount,
+            StreamWriter streamWriter, Stopwatch stopWatch,
+            ref int count, ref int successfulBuilds, ref int failedBuilds)
+        {
+            for (count = 1; count <= buildCount; count++)
+            {
+                // Проверка памяти перед каждой итерацией
+                if (IsMemoryCritical())
+                {
+                    Console.WriteLine($"\n⚠️  КРИТИЧЕСКАЯ НЕХВАТКА ПАМЯТИ!");
+                    Console.WriteLine($"   Доступно: {GetAvailableMemoryGB():F1} ГБ");
+                    Console.WriteLine($"   Тест остановлен для предотвращения " +
+                        $"краха системы.");
+                    break;
+                }
+
+                string status = "OK";
+                double timeMs = 0;
+
+                try
+                {
+                    stopWatch.Start();
+                    builder.BuildGlass(parameters, createHandle);
+                    stopWatch.Stop();
+
+                    timeMs = stopWatch.Elapsed.TotalMilliseconds;
+                    successfulBuilds++;
+                }
+                catch (Exception ex)
+                {
+                    status = $"Ошибка: {ex.Message}";
+                    failedBuilds++;
+                    timeMs = stopWatch.Elapsed.TotalMilliseconds;
+                }
+
+                LogIteration(streamWriter, count, timeMs, status);
+
+                if (count % 10 == 0 || count == buildCount)
+                {
+                    PrintProgress(count, buildCount, successfulBuilds,
+                        failedBuilds, timeMs);
+                }
+
+                stopWatch.Reset();
+
+                if (count < buildCount)
+                {
+                    System.Threading.Thread.Sleep(50);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Выполняет тест с фиксированной длительностью.
+        /// </summary>
+        private void RunDurationTest(GlassBuilder builder,
+            Parameters parameters, bool createHandle, double durationMinutes,
+            StreamWriter streamWriter, Stopwatch stopWatch,
+            Stopwatch testStopwatch, ref int count,
+            ref int successfulBuilds, ref int failedBuilds)
+        {
+            var targetDuration = TimeSpan.FromMinutes(durationMinutes);
+            count = 0;
+
+            while (testStopwatch.Elapsed < targetDuration)
+            {
+                // Проверка памяти перед каждой итерацией
+                if (IsMemoryCritical())
+                {
+                    Console.WriteLine($"\n⚠️  КРИТИЧЕСКАЯ НЕХВАТКА ПАМЯТИ!");
+                    Console.WriteLine($"   Доступно: {GetAvailableMemoryGB():F1} ГБ");
+                    Console.WriteLine($"   Тест остановлен для предотвращения " +
+                        $"краха системы.");
+                    break;
+                }
+
+                count++;
+                string status = "OK";
+                double timeMs = 0;
+
+                try
+                {
+                    stopWatch.Start();
+                    builder.BuildGlass(parameters, createHandle);
+                    stopWatch.Stop();
+
+                    timeMs = stopWatch.Elapsed.TotalMilliseconds;
+                    successfulBuilds++;
+                }
+                catch (Exception ex)
+                {
+                    status = $"Ошибка: {ex.Message}";
+                    failedBuilds++;
+                    timeMs = stopWatch.Elapsed.TotalMilliseconds;
+                }
+
+                LogIteration(streamWriter, count, timeMs, status);
+
+                if (count % 10 == 0)
+                {
+                    PrintDurationProgress(count, testStopwatch,
+                        durationMinutes, successfulBuilds, failedBuilds, timeMs);
+                }
+
+                stopWatch.Reset();
+                System.Threading.Thread.Sleep(50);
+            }
+        }
+
+        /// <summary>
+        /// Логирует одну итерацию теста в файл.
+        /// </summary>
+        private void LogIteration(StreamWriter streamWriter,
+            int iteration, double timeMs, string status)
+        {
+            double usedMemory = GetProcessMemoryGB();
+            streamWriter.WriteLine($"{iteration}\t{timeMs:F0}\t" +
+                $"{usedMemory:F3}\t{status}");
+            streamWriter.Flush();
+        }
+
+        /// <summary>
+        /// Выводит прогресс итерационного теста.
+        /// </summary>
+        private void PrintProgress(int current, int total,
+            int successful, int failed, double timeMs)
+        {
+            double percentage = (current * 100.0) / total;
+            double usedMemory = GetProcessMemoryGB();
+            double availableMemory = GetAvailableMemoryGB();
+
+            Console.Write($"\rПрогресс: {current}/{total} " +
+                $"({percentage:F1}%) | Успешно: {successful} | " +
+                $"Ошибки: {failed} | Время: {timeMs:F0} мс | " +
+                $"Память: {usedMemory:F2} ГБ | " +
+                $"Доступно ОЗУ: {availableMemory:F1} ГБ");
+        }
+
+        /// <summary>
+        /// Выводит прогресс теста по времени.
+        /// </summary>
+        private void PrintDurationProgress(int count,
+            Stopwatch testStopwatch, double durationMinutes,
+            int successful, int failed, double timeMs)
+        {
+            var elapsed = testStopwatch.Elapsed;
+            var remaining = TimeSpan.FromMinutes(durationMinutes) - elapsed;
+            double usedMemory = GetProcessMemoryGB();
+            double availableMemory = GetAvailableMemoryGB();
+
+            Console.Write($"\rПрогресс: {count} построений | " +
+                $"Прошло: {elapsed.Minutes:D2}:{elapsed.Seconds:D2} / " +
+                $"{durationMinutes:F1} мин | Осталось: " +
+                $"{remaining.Minutes:D2}:{remaining.Seconds:D2} | " +
+                $"Успешно: {successful} | Ошибки: {failed} | " +
+                $"Время: {timeMs:F0} мс | Память: {usedMemory:F2} ГБ | " +
+                $"Доступно ОЗУ: {availableMemory:F1} ГБ");
+        }
+
+        /// <summary>
+        /// Выводит итоговые результаты теста.
+        /// </summary>
+        private void PrintTestResults(Stopwatch testStopwatch,
+            int totalCount, int successful, int failed, string filePath)
+        {
+            var totalTime = testStopwatch.Elapsed;
+            Console.WriteLine($"\nТест завершен. Всего построений: {totalCount}");
+            Console.WriteLine($"Успешных: {successful}, Ошибок: {failed}");
+            Console.WriteLine($"Общее время: {totalTime.Minutes:D2}:" +
+                $"{totalTime.Seconds:D2}");
+
+            if (successful > 0)
+            {
+                double avgTime = totalTime.TotalMilliseconds / successful;
+                Console.WriteLine($"Среднее время на построение: " +
+                    $"{avgTime:F0} мс");
+            }
+
+            Console.WriteLine($"Результаты сохранены в: {filePath}");
+        }
+
+        /// <summary>
+        /// Получает использование памяти текущим процессом в ГБ.
+        /// </summary>
+        /// <returns>Используемая память в гигабайтах.</returns>
+        private double GetProcessMemoryGB()
+        {
+            try
+            {
+                var process = Process.GetCurrentProcess();
+                return process.WorkingSet64 * GB_CONVERSION;
+            }
+            catch
+            {
+                return 0;
+            }
         }
     }
 }
