@@ -10,6 +10,7 @@ namespace CoreTest
     {
         private Parameters _parameters;
 
+        //TODO: refactor
         [SetUp]
         public void Setup()
         {

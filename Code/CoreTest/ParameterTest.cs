@@ -10,6 +10,7 @@ namespace CoreTest
     {
         private Parameter _parameter;
 
+        //TODO: remove
         [SetUp]
         public void Setup()
         {

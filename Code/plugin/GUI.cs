@@ -208,6 +208,7 @@ namespace glass_plugin
             }
         }
 
+        //TODO: remove region
         #region TextChanged Event Handlers
 
         /// <summary>

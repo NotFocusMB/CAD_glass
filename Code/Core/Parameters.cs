@@ -15,6 +15,7 @@ namespace Core
         /// </summary>
         public Dictionary<ParameterType, Parameter> NumericalParameters { get; set; }
 
+        //TODO: XML
         // Приватный словарь-эталон для хранения "заводских" настроек.
         private readonly Dictionary<ParameterType,
             (double Min, double Max, double Default)> _initialLimits;

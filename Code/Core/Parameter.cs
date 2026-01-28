@@ -7,6 +7,7 @@ namespace Core
     /// </summary>
     public class Parameter
     {
+        //TODO: XML
         private double _minValue;
         private double _maxValue;
         private double _value;
