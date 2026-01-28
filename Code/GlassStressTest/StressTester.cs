@@ -6,11 +6,30 @@ using GlassPlugin;
 
 namespace GlassPluginStressTests
 {
+    /// <summary>
+    /// Класс для проведения нагрузочного тестирования плагина бокала.
+    /// </summary>
     public class StressTester
     {
-        private const double GB_CONVERSION = 0.000000000931322574615478515625;
-        private const double MIN_AVAILABLE_MEMORY_GB = 2.0;
+        /// <summary>
+        /// Коэффициент преобразования байтов в гигабайты.
+        /// </summary>
+        private const double GB_CONVERSION =
+            0.000000000931322574615478515625;
 
+        /// <summary>
+        /// Минимальный допустимый объем доступной памяти в ГБ.
+        /// </summary>
+        private const double MIN_AVAILABLE_MEMORY_GB = 1.0;
+
+        /// <summary>
+        /// Выполняет нагрузочное тестирование плагина.
+        /// </summary>
+        /// <param name="testName">Название теста.</param>
+        /// <param name="parameters">Параметры бокала.</param>
+        /// <param name="buildCount">Количество построений.</param>
+        /// <param name="durationMinutes">Длительность теста в минутах.</param>
+        /// <param name="createHandle">Создавать ручку.</param>
         public void RunTest(string testName, Parameters parameters,
                            int? buildCount, double? durationMinutes,
                            bool createHandle = false)
@@ -21,11 +40,13 @@ namespace GlassPluginStressTests
             PrintTestMode(buildCount, durationMinutes);
             Console.WriteLine();
 
-            string fileName = $"log_{testName}_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
+            string fileName =
+                $"log_{testName}_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
 
             using (var streamWriter = new StreamWriter(fileName))
             {
-                WriteTestHeader(streamWriter, testName, parameters, createHandle);
+                WriteTestHeader(streamWriter, testName,
+                    parameters, createHandle);
 
                 var builder = new GlassBuilder();
                 var stopWatch = new Stopwatch();
@@ -55,7 +76,8 @@ namespace GlassPluginStressTests
                     }
                     else if (durationMinutes.HasValue)
                     {
-                        var targetDuration = TimeSpan.FromMinutes(durationMinutes.Value);
+                        var targetDuration =
+                            TimeSpan.FromMinutes(durationMinutes.Value);
 
                         while (testStopwatch.Elapsed < targetDuration)
                         {
@@ -87,9 +109,13 @@ namespace GlassPluginStressTests
             }
         }
 
-        private void RunSingleBuild(GlassBuilder builder, Parameters parameters,
-            bool createHandle, Stopwatch stopWatch, StreamWriter streamWriter,
-            int count, ref int successfulBuilds, ref int failedBuilds)
+        /// <summary>
+        /// Выполняет одно построение бокала и логирует результаты.
+        /// </summary>
+        private void RunSingleBuild(GlassBuilder builder,
+            Parameters parameters, bool createHandle, Stopwatch stopWatch,
+            StreamWriter streamWriter, int count,
+            ref int successfulBuilds, ref int failedBuilds)
         {
             string status = "OK";
             double timeMs = 0;
@@ -114,7 +140,8 @@ namespace GlassPluginStressTests
             double usedMemory = GetProcessMemoryGB();
             double availableMemory = GetAvailableMemoryGB();
 
-            streamWriter.WriteLine($"{count}\t{timeMs:F0}\t{usedMemory:F3}\t" +
+            streamWriter.WriteLine(
+                $"{count}\t{timeMs:F0}\t{usedMemory:F3}\t" +
                 $"{availableMemory:F3}\t{status}");
             streamWriter.Flush();
 
@@ -130,13 +157,21 @@ namespace GlassPluginStressTests
             System.Threading.Thread.Sleep(50);
         }
 
+        /// <summary>
+        /// Проверяет, достигнут ли критический уровень памяти.
+        /// </summary>
+        /// <returns>True, если доступно меньше MIN_AVAILABLE_MEMORY_GB.</returns>
         private bool IsMemoryCritical()
         {
             double availableGB = GetAvailableMemoryGB();
             return availableGB < MIN_AVAILABLE_MEMORY_GB;
         }
 
-        private void HandleMemoryCritical(StreamWriter streamWriter, int count)
+        /// <summary>
+        /// Обрабатывает ситуацию нехватки памяти.
+        /// </summary>
+        private void HandleMemoryCritical(StreamWriter streamWriter,
+            int count)
         {
             double availableGB = GetAvailableMemoryGB();
             Console.WriteLine($"\n⚠️  КРИТИЧЕСКАЯ НЕХВАТКА ПАМЯТИ!");
@@ -146,6 +181,9 @@ namespace GlassPluginStressTests
                 $"Доступно: {availableGB:F1} ГБ");
         }
 
+        /// <summary>
+        /// Записывает заголовок теста в лог-файл.
+        /// </summary>
         private void WriteTestHeader(StreamWriter streamWriter,
             string testName, Parameters parameters, bool createHandle)
         {
@@ -165,7 +203,11 @@ namespace GlassPluginStressTests
                 "Доступно ОЗУ(ГБ)\tСтатус");
         }
 
-        private void PrintParameters(Parameters parameters, bool createHandle)
+        /// <summary>
+        /// Выводит параметры бокала в консоль.
+        /// </summary>
+        private void PrintParameters(Parameters parameters,
+            bool createHandle)
         {
             Console.WriteLine("Параметры:");
             var numParams = parameters.NumericalParameters;
@@ -178,7 +220,11 @@ namespace GlassPluginStressTests
             Console.WriteLine($"  Ручка: {(createHandle ? "Да" : "Нет")}");
         }
 
-        private void PrintTestMode(int? buildCount, double? durationMinutes)
+        /// <summary>
+        /// Выводит режим тестирования в консоль.
+        /// </summary>
+        private void PrintTestMode(int? buildCount,
+            double? durationMinutes)
         {
             if (buildCount.HasValue)
             {
@@ -190,6 +236,9 @@ namespace GlassPluginStressTests
             }
         }
 
+        /// <summary>
+        /// Выводит итоговые результаты теста.
+        /// </summary>
         private void PrintTestResults(Stopwatch testStopwatch,
             int totalCount, int successful, int failed, string filePath)
         {
@@ -208,6 +257,10 @@ namespace GlassPluginStressTests
             Console.WriteLine($"Файл лога: {filePath}");
         }
 
+        /// <summary>
+        /// Получает использование памяти текущим процессом в ГБ.
+        /// </summary>
+        /// <returns>Используемая память в гигабайтах.</returns>
         private double GetProcessMemoryGB()
         {
             try
@@ -221,11 +274,16 @@ namespace GlassPluginStressTests
             }
         }
 
+        /// <summary>
+        /// Получает доступный объем оперативной памяти системы в ГБ.
+        /// </summary>
+        /// <returns>Доступная память в гигабайтах.</returns>
         private double GetAvailableMemoryGB()
         {
             try
             {
-                var pc = new PerformanceCounter("Memory", "Available Bytes");
+                var pc = new PerformanceCounter("Memory",
+                    "Available Bytes");
                 float availableBytes = pc.NextValue();
                 return availableBytes * GB_CONVERSION;
             }
