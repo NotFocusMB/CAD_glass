@@ -109,6 +109,7 @@ namespace GlassPlugin
 
             // Рассчитываем толщину стенок
             double wallThickness = stalkRadius / 2.0;
+
             if (wallThickness < 1)
             {
                 wallThickness = 1.0;

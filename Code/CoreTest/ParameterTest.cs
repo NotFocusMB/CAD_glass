@@ -10,7 +10,6 @@ namespace CoreTest
     {
         private Parameter _parameter;
 
-        [SetUp]
         public void Setup()
         {
             // Исправлено: Используем конструктор с параметрами

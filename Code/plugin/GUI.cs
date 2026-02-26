@@ -208,8 +208,6 @@ namespace glass_plugin
             }
         }
 
-        #region TextChanged Event Handlers
-
         /// <summary>
         /// Универсальный обработчик изменения текста в TextBox.
         /// </summary>

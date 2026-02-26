@@ -7,8 +7,18 @@ namespace Core
     /// </summary>
     public class Parameter
     {
+        //TODO: XML +
+        /// <summary>
+        /// Переменная, хранящая минимальное допустимое значение параметра.
+        /// </summary>
         private double _minValue;
+        /// <summary>
+        /// Переменная, хранящая максимальное допустимое значение параметра.
+        /// </summary>
         private double _maxValue;
+        /// <summary>
+        /// Переменная, хранящая значение параметра.
+        /// </summary>
         private double _value;
 
         /// <summary>
