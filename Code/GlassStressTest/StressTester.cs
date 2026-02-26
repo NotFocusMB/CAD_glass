@@ -20,7 +20,7 @@ namespace GlassPluginStressTests
         /// <summary>
         /// Минимальный допустимый объем доступной памяти в ГБ.
         /// </summary>
-        private const double MIN_AVAILABLE_MEMORY_GB = 1.0;
+        private const double MIN_AVAILABLE_MEMORY_GB = 0.2;
 
         /// <summary>
         /// Выполняет нагрузочное тестирование плагина.
