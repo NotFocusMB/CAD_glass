@@ -220,8 +220,6 @@ namespace glass_plugin
             }
         }
 
-        #endregion
-
         /// <summary>
         /// Обработчик нажатия кнопки "Сброс".
         /// </summary>

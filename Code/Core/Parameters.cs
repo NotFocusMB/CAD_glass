@@ -15,8 +15,10 @@ namespace Core
         /// </summary>
         public Dictionary<ParameterType, Parameter> NumericalParameters { get; set; }
 
-        //TODO: XML
-        // Приватный словарь-эталон для хранения "заводских" настроек.
+        //TODO: XML +
+        /// <summary>
+        /// Приватный словарь-эталон для хранения "заводских" настроек.
+        /// </summary>
         private readonly Dictionary<ParameterType,
             (double Min, double Max, double Default)> _initialLimits;
 
@@ -29,7 +31,6 @@ namespace Core
             SetDefaultValues();
 
             // Кэшируем "заводские" Min/Max и дефолтные значения.
-            // Это должно быть сделано прямо в конструкторе из-за 'readonly'.
             _initialLimits = NumericalParameters.ToDictionary(
                 kvp => kvp.Key,
                 kvp => (kvp.Value.MinValue, kvp.Value.MaxValue, kvp.Value.Value)
@@ -78,7 +79,7 @@ namespace Core
             if (NumericalParameters.ContainsKey(type))
             {
                 var param = NumericalParameters[type];
-                // Добавляем проверку на несовместимость
+                // Проверка на несовместимость
                 if (param.MinValue > param.MaxValue ||
                     (param.MinValue > _initialLimits[type].Max) ||
                     (param.MaxValue < _initialLimits[type].Min))
@@ -94,7 +95,6 @@ namespace Core
         /// </summary>
         private void InitializeParameters()
         {
-            // Используем новый конструктор класса Parameter
             var stalkHeight = new Parameter(50, 100);
             var sideHeight = new Parameter(1, 50);
             var bowlRadius = new Parameter(25, 50);
