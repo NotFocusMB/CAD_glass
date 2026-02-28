@@ -15,7 +15,6 @@ namespace Core
         /// </summary>
         public Dictionary<ParameterType, Parameter> NumericalParameters { get; set; }
 
-        //TODO: XML +
         /// <summary>
         /// Приватный словарь-эталон для хранения "заводских" настроек.
         /// </summary>
