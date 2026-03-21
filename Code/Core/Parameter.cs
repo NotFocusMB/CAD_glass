@@ -7,6 +7,7 @@ namespace Core
     /// </summary>
     public class Parameter
     {
+        //TODO: XML +
         /// <summary>
         /// Переменная, хранящая минимальное допустимое значение параметра.
         /// </summary>
