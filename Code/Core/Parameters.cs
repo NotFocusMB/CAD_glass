@@ -10,13 +10,11 @@ namespace Core
     /// </summary>
     public class Parameters
     {
-        //TODO: XML +
         /// <summary>
         /// Основной словарь, хранящий текущие объекты параметров модели.
         /// </summary>
-        public Dictionary<ParameterType, Parameter> NumericalParameters { get; set; }
+        public Dictionary<ParameterType, Parameter> NumericalParameters { get; private set; }
 
-        //TODO: XML +
         /// <summary>
         /// Приватный словарь-эталон для хранения "заводских" настроек.
         /// </summary>
